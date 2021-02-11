@@ -1,0 +1,16 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: Run migration tool
+      command: /tmp/almalinux-deploy.sh
+
+    - name: Reboot VM
+      reboot:
+
+    - name: Wait for reboot
+      wait_for_connection:
+        delay: 60
+        sleep: 5
+        timeout: 300

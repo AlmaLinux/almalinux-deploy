@@ -1,0 +1,9 @@
+exclude_paths:
+  - ./env
+  - ./venv
+
+skip_list:
+  # ignore "Commands should not change things if nothing needs doing"
+  - '301'
+  # ignore "Package installs should not use latest" warning
+  - '403'
