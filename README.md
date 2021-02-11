@@ -68,6 +68,12 @@ Technology stack:
   are powered by [Vagrant](https://www.vagrantup.com/) and
   [VirtualBox](https://www.virtualbox.org/).
 
+To run the functional tests do the following:
+
+1. Install Vagrant and VirtualBox.
+2. Install requirements from the requirements.txt file.
+3. Run `molecule test` in the project root.
+
 
 ## License
 
