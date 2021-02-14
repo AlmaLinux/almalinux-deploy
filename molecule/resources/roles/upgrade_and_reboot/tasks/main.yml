@@ -1,0 +1,14 @@
+---
+- name: Upgrade all packages
+  dnf:
+    name: '*'
+    state: latest
+
+- name: Reboot VM
+  reboot:
+
+- name: Wait for reboot
+  wait_for_connection:
+    delay: 60
+    sleep: 5
+    timeout: 300

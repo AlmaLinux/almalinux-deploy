@@ -1,0 +1,8 @@
+---
+- name: Upload almalinux-deploy.sh
+  copy:
+    src: almalinux-deploy.sh
+    dest: /tmp/almalinux-deploy.sh
+    owner: root
+    group: root
+    mode: '0700'

@@ -5,7 +5,7 @@ driver:
 platforms:
   - name: centos-8
     box: centos/8
-    memory: 1024
+    memory: 2048
     cpus: 1
 
 provisioner:
@@ -19,7 +19,7 @@ verifier:
     v: true
 
 scenario:
-  name: default
+  name: centos8-gui
   test_sequence:
     - lint
     - destroy

@@ -16,7 +16,8 @@ def test_grub_default(host):
 
 
 @pytest.mark.parametrize('name', [
-    'centos-linux-release', 'centos-gpg-keys', 'centos-linux-repos'
+    'centos-linux-release', 'centos-gpg-keys', 'centos-linux-repos',
+    'libreport-plugin-rhtsupport'
 ])
 def test_centos_packages_removed(host, name):
     pkg = host.package(name)

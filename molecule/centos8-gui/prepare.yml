@@ -5,3 +5,4 @@
   roles:
     - upload_almalinux_deploy
     - upgrade_and_reboot
+    - install_server_with_gui_group

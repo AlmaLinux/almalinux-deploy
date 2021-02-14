@@ -1,0 +1,5 @@
+---
+- name: Install 'Server with GUI' group
+  dnf:
+    name: '@Server with GUI'
+    state: present

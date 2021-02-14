@@ -9,7 +9,7 @@ set -euo pipefail
 
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
-VERSION='0.1.1'
+VERSION='0.1.2'
 
 # Reports a completed step using a green color.
 #
@@ -172,8 +172,12 @@ cleanup_tmp_dir() {
 migrate_from_centos() {
     local -r release_path="${1}"
     local to_remove=''
-    # replace CentOS packages with almalinux-release
-    for pkg_name in centos-linux-release centos-gpg-keys centos-linux-repos; do
+    local alma_pkg=''
+    local output
+    # replace CentOS packages with almalinux-release and remove centos-specific
+    # packages
+    for pkg_name in centos-linux-release centos-gpg-keys centos-linux-repos \
+                    libreport-plugin-rhtsupport; do
         if rpm -q "${pkg_name}" &>/dev/null; then
             to_remove="${to_remove} ${pkg_name}"
         fi
@@ -186,7 +190,19 @@ migrate_from_centos() {
         done
     fi
     rpm -Uvh "${release_path}"
-    report_step_done 'Install almalinux-release'
+    report_step_done 'Install almalinux-release package'
+    # replace GUI packages
+    for pkg_name in centos-backgrounds centos-logos centos-indexhtml; do
+        if rpm -q "${pkg_name}" &>/dev/null; then
+            alma_pkg="${pkg_name//centos/almalinux}"
+            rpm -e --nodeps "${pkg_name}"
+            report_step_done "Remove ${pkg_name} package"
+            if ! output=$(dnf install -y "${alma_pkg}" 2>&1); then
+                report_step_error "Install ${alma_pkg} package" "${output}"
+            fi
+            report_step_done "Install ${alma_pkg} package"
+        fi
+    done
 }
 
 # Executes the 'dnf distro-sync -y' command.

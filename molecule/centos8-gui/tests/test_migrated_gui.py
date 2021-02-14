@@ -1,0 +1,1 @@
+../../resources/tests/test_migrated_gui.py
