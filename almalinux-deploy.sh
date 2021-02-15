@@ -9,7 +9,7 @@ set -euo pipefail
 
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
-VERSION='0.1.2'
+VERSION='0.1.3'
 
 # Reports a completed step using a green color.
 #
@@ -72,6 +72,17 @@ get_os_release_var() {
     echo "${val}"
 }
 
+# Prints control type and version.
+get_panel_info() {
+    local panel_type=''
+    local panel_version=''
+    if [[ -x '/usr/local/cpanel/cpanel' ]]; then
+        panel_type='cpanel'
+        panel_version=$(/usr/local/cpanel/cpanel -V 2>/dev/null | grep -oP '^[\d.]+')
+    fi
+    echo "${panel_type} ${panel_version}"
+}
+
 # Terminates the program if a platform is not supported by AlmaLinux.
 #
 # $1 - Operational system id (ID).
@@ -94,6 +105,19 @@ assert_supported_system() {
         exit 1
     fi
     report_step_done "Check ${os_id}-${os_version}.${arch} is supported"
+}
+
+# Terminates the program if a control panel is not supported by AlmaLinux.
+#
+# $1 - Control panel type.
+# $2 - Control panel version.
+assert_supported_panel() {
+    local -r panel_type="${1}"
+    local -r panel_version="${2}"
+    if [[ "${panel_type}" == 'cpanel' ]]; then
+        report_step_error 'cPanel is not supported yet'
+        exit 1
+    fi
 }
 
 # Returns a latest almalinux-release RPM package download URL.
@@ -226,12 +250,18 @@ main() {
     local release_url
     local tmp_dir
     local release_path
+    local panel_type
+    local panel_version
     assert_run_as_root
     arch="$(get_system_arch)"
     os_version="$(get_os_release_var 'VERSION_ID')"
     os_version="${os_version:0:1}"
     os_id="$(get_os_release_var 'ID')"
     assert_supported_system "${os_id}" "${os_version}" "${arch}"
+
+    read -r panel_type panel_version < <(get_panel_info)
+    assert_supported_panel "${panel_type}" "${panel_version}"
+
     release_url=$(get_release_file_url "${os_version}" "${arch}")
     tmp_dir=$(mktemp -d --tmpdir="${BASE_TMP_DIR}" .alma.XXXXXX)
     # shellcheck disable=SC2064
