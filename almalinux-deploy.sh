@@ -9,7 +9,7 @@ set -euo pipefail
 
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
-VERSION='0.1.3'
+VERSION='0.1.4'
 
 # Reports a completed step using a green color.
 #
@@ -76,9 +76,14 @@ get_os_release_var() {
 get_panel_info() {
     local panel_type=''
     local panel_version=''
-    if [[ -x '/usr/local/cpanel/cpanel' ]]; then
+    local -r cpanel_file='/usr/local/cpanel/cpanel'
+    local -r plesk_file='/usr/local/psa/version'
+    if [[ -x "${cpanel_file}" ]]; then
         panel_type='cpanel'
-        panel_version=$(/usr/local/cpanel/cpanel -V 2>/dev/null | grep -oP '^[\d.]+')
+        panel_version=$("${cpanel_file}" -V 2>/dev/null | grep -oP '^[\d.]+')
+    elif [[ -f "${plesk_file}" ]]; then
+        panel_type='plesk'
+        panel_version=$(grep -oP '^[\d.]+' "${plesk_file}" 2>/dev/null)
     fi
     echo "${panel_type} ${panel_version}"
 }
@@ -116,6 +121,9 @@ assert_supported_panel() {
     local -r panel_version="${2}"
     if [[ "${panel_type}" == 'cpanel' ]]; then
         report_step_error 'cPanel is not supported yet'
+        exit 1
+    elif [[ "${panel_type}" == 'plesk' ]]; then
+        report_step_error 'Plesk is not supported yet'
         exit 1
     fi
 }
