@@ -10,11 +10,17 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
 1. Make a backup of the system. We didn't test all possible scenarios so there
    is a risk that something goes wrong. In such a situation you will have a
    restore point.
-2. Download the [almalinux-deploy.sh](almalinux-deploy.sh) script:
+2. Disable Secure Boot because AlmaLinux doesn't support it yet
+   ([almbz#3](https://bugs.almalinux.org/view.php?id=3)). Detailed instructions
+   for bare metal hardware can be found
+   [here](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/disabling-secure-boot#disable-secure-boot).
+   Instructions for VMWare are available
+   [here](https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.vsphere.security.doc/GUID-898217D4-689D-4EB5-866C-888353FE241C.html).
+3. Download the [almalinux-deploy.sh](almalinux-deploy.sh) script:
    ```shell
    $ curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
    ```
-3. Run the script and check its output for errors. You will need to reboot the
+4. Run the script and check its output for errors. You will need to reboot the
    system at the end.
    ```shell
    $ sudo bash almalinux-deploy.sh
@@ -23,7 +29,7 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
    
    $ reboot
    ```
-4. Ensure that your system was successfully converted:
+5. Ensure that your system was successfully converted:
    ```shell
    # check release file
    $ cat /etc/redhat-release 
@@ -33,7 +39,7 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
    $ sudo grubby --info DEFAULT | grep AlmaLinux
    title="AlmaLinux (4.18.0-240.el8.x86_64) 8"
    ```
-5. Thank you for choosing AlmaLinux!
+6. Thank you for choosing AlmaLinux!
 
 
 ## Roadmap

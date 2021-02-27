@@ -9,7 +9,7 @@ set -euo pipefail
 
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
-VERSION='0.1.4'
+VERSION='0.1.5'
 
 # Reports a completed step using a green color.
 #
@@ -50,6 +50,16 @@ assert_run_as_root() {
         exit 2
     fi
     report_step_done 'Check root privileges'
+}
+
+# Terminates the program if UEFI Secure Boot is enabled
+assert_secureboot_disabled() {
+    local -r message='Check Secure Boot disabled'
+    if dmesg | grep -P 'secureboot:\s+Secure\s+boot\s+enabled' 1>/dev/null; then
+        report_step_error "${message}" 'Secure Boot is not supported yet'
+        exit 1
+    fi
+    report_step_done "${message}"
 }
 
 # Prints a system architecture.
@@ -261,6 +271,7 @@ main() {
     local panel_type
     local panel_version
     assert_run_as_root
+    assert_secureboot_disabled
     arch="$(get_system_arch)"
     os_version="$(get_os_release_var 'VERSION_ID')"
     os_version="${os_version:0:1}"

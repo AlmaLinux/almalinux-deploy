@@ -43,6 +43,24 @@ teardown() {
     [[ ${status} -ne 0 ]]
 }
 
+@test 'assert_secureboot_disabled fails on enabled Secure Boot' {
+    function dmesg() {
+        echo '[    0.000000] secureboot: Secure boot enabled'
+    }
+    export -f dmesg
+    run assert_secureboot_disabled
+    [[ ${status} -ne 0 ]]
+}
+
+@test 'assert_secureboot_disabled passes on disabled Secure Boot' {
+    function dmesg() {
+        echo '[    0.000000] secureboot: Secure boot disabled'
+    }
+    export -f dmesg
+    run assert_secureboot_disabled
+    [[ ${status} -eq 0 ]]
+}
+
 @test 'get_os_release_var extracts VERSION_ID' {
     echo 'VERSION_ID="8"' >> ${MOCKED_OS_RELEASE}
     export OS_RELEASE_PATH="${MOCKED_OS_RELEASE}"
