@@ -20,14 +20,11 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
    ```shell
    $ curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
    ```
-4. Run the script and check its output for errors. You will need to reboot the
-   system at the end.
+4. Run the script and check its output for errors:
    ```shell
    $ sudo bash almalinux-deploy.sh
      ...
-     Migration to AlmaLinux is completed, please reboot the system
-   
-   $ reboot
+     Migration to AlmaLinux is completed
    ```
 5. Ensure that your system was successfully converted:
    ```shell

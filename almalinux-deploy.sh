@@ -304,7 +304,7 @@ main() {
     esac
 
     distro_sync || exit ${?}
-    printf '\n\033[0;32mMigration to AlmaLinux is completed, please reboot the system\033[0m\n'
+    printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
