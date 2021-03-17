@@ -2,13 +2,15 @@ source almalinux-deploy.sh
 
 
 setup() {
-    if [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_release_var' ]]; then
+    if [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_release_var' ]] \
+       || [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_version' ]]; then
         MOCKED_OS_RELEASE=$(tempfile -d ${BATS_TMPDIR} -p osrel_)
     fi
 }
 
 teardown() {
-    if [[ ${BATS_TEST_NAME} =~ 'get_os_release_var' ]]; then
+    if [[ ${BATS_TEST_NAME} =~ 'get_os_release_var' ]] \
+       || [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_version' ]]; then
         rm -f ${MOCKED_OS_RELEASE}
     fi
 }
@@ -27,7 +29,7 @@ teardown() {
     run get_system_arch
     [[ ${status} -eq 0 ]]
     [[ ${output} == 'aarch64' ]]
-}   
+}
 
 @test 'assert_run_as_root passes for root' {
     function id() { echo 0; }
@@ -124,4 +126,28 @@ teardown() {
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]
     done
+}
+
+@test 'get_os_version detects CentOS 8.2 Core' {
+    echo 'CentOS Linux release 8.2.2004 (Core)' >> ${MOCKED_OS_RELEASE}
+    export REDHAT_RELEASE_PATH="${MOCKED_OS_RELEASE}"
+    run get_os_version 'centos'
+    [[ ${status} -eq 0 ]]
+    [[ ${output} == '8.2' ]]
+}
+
+@test 'get_os_version detects CentOS 8.3' {
+    echo 'CentOS Linux release 8.3.2011' >> ${MOCKED_OS_RELEASE}
+    export REDHAT_RELEASE_PATH="${MOCKED_OS_RELEASE}"
+    run get_os_version 'centos'
+    [[ ${status} -eq 0 ]]
+    [[ ${output} == '8.3' ]]
+}
+
+@test 'get_os_version reads OS_RELEASE' {
+    echo 'VERSION_ID="8"' >> ${MOCKED_OS_RELEASE}
+    export OS_RELEASE_PATH="${MOCKED_OS_RELEASE}"
+    run get_os_version 'weirdos'
+    [[ ${status} -eq 0 ]]
+    [[ ${output} == '8' ]]
 }

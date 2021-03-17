@@ -9,7 +9,8 @@ set -euo pipefail
 
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
-VERSION='0.1.5'
+REDHAT_RELEASE_PATH='/etc/redhat-release'
+VERSION='0.1.6'
 
 # Reports a completed step using a green color.
 #
@@ -82,6 +83,25 @@ get_os_release_var() {
     echo "${val}"
 }
 
+# Detects an operational system version.
+#
+# $1 - operational system type.
+#
+# Prints OS version.
+get_os_version() {
+    local -r os_type="${1}"
+    local os_version
+    if [[ "${os_type}" == 'centos' ]]; then
+        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
+                                    "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
+            report_step_error "Detect ${os_type} version"
+        fi
+    else
+        os_version="$(get_os_release_var 'VERSION_ID')"
+    fi
+    echo "${os_version}"
+}
+
 # Prints control type and version.
 get_panel_info() {
     local panel_type=''
@@ -101,11 +121,11 @@ get_panel_info() {
 # Terminates the program if a platform is not supported by AlmaLinux.
 #
 # $1 - Operational system id (ID).
-# $2 - Operational system version (VERSION_ID).
+# $2 - Operational system version (e.g. 8 or 8.3).
 # $3 - System architecture (e.g. x86_64).
 assert_supported_system() {
-    local -r os_id="${1}"
-    local -r os_version="${2}"
+    local -r os_type="${1}"
+    local -r os_version="${2:0:1}"
     local -r arch="${3}"
     if [[ ${arch} != 'x86_64' ]]; then
         report_step_error "Check ${arch} architecture is supported"
@@ -115,11 +135,12 @@ assert_supported_system() {
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
-    if [[ ${os_id} != 'centos' ]]; then
-        report_step_error "Check ${os_id} operating system is supported"
+    if [[ ${os_type} != 'centos' && ${os_type} != 'almalinux' && \
+          ${os_type} != 'ol' && ${os_type} != 'rhel' ]]; then
+        report_step_error "Check ${os_type} operating system is supported"
         exit 1
     fi
-    report_step_done "Check ${os_id}-${os_version}.${arch} is supported"
+    report_step_done "Check ${os_type}-${os_version}.${arch} is supported"
 }
 
 # Terminates the program if a control panel is not supported by AlmaLinux.
@@ -145,7 +166,7 @@ assert_supported_panel() {
 #
 # Prints almalinux-release RPM package download URL.
 get_release_file_url() {
-    local -r os_version="${1}"
+    local -r os_version="${1:0:1}"
     local -r arch="${2}"
     echo "${ALMA_RELEASE_URL:-https://repo.almalinux.org/almalinux/almalinux-release-latest-${os_version}.${arch}.rpm}"
 }
@@ -201,6 +222,38 @@ assert_valid_package() {
     fi
 }
 
+# Terminates the program if OS version doesn't match AlmaLinux version.
+#
+# $1 - OS version.
+# $2 - almalinux-release package file path.
+assert_compatible_os_version() {
+    local -r os_version="${1}"
+    local -r release_path="${2}"
+    local alma_version
+    alma_version=$(rpm -qp --queryformat '%{version}' "${release_path}")
+    if [[ "${alma_version}" != "${os_version}" ]]; then
+        report_step_error "Check OS is up to date" \
+            "Please upgrade your OS from ${os_version} to ${alma_version} and retry"
+        exit 1
+    fi
+}
+
+# Backup /etc/issue* files
+backup_issue() {
+    for file in $(rpm -Vf /etc/issue | cut -d' ' -f4); do
+        if [[ ${file} =~ "/etc/issue" ]]; then
+            cp ${file} ${file}.bak
+        fi
+    done
+}
+
+# Restore /etc/issue* files
+restore_issue() {
+    for file in /etc/issue /etc/issue.net; do
+        [ -f "${file}.bak" ] && mv ${file}.bak ${file}
+    done
+}
+
 # Recursively removes a given directory.
 #
 # $1 - Directory path.
@@ -219,18 +272,23 @@ migrate_from_centos() {
     # replace CentOS packages with almalinux-release and remove centos-specific
     # packages
     for pkg_name in centos-linux-release centos-gpg-keys centos-linux-repos \
-                    libreport-plugin-rhtsupport; do
+                    libreport-plugin-rhtsupport libreport-rhel insights-client \
+                    libreport-rhel-anaconda-bugzilla libreport-rhel-bugzilla \
+                    oraclelinux-release oraclelinux-release-el8 \
+                    redhat-release redhat-release-eula; do
         if rpm -q "${pkg_name}" &>/dev/null; then
             to_remove="${to_remove} ${pkg_name}"
         fi
     done
     if [[ -n "${to_remove}" ]]; then
         # shellcheck disable=SC2086
-        rpm -e --nodeps ${to_remove}
+        rpm -e --nodeps --allmatches ${to_remove}
         for pkg_name in ${to_remove}; do
             report_step_done "Remove ${pkg_name} package"
         done
     fi
+    [ -d /usr/share/doc/redhat-release ] && rm -r /usr/share/doc/redhat-release
+    [ -d /usr/share/redhat-release ] && rm -r /usr/share/redhat-release
     rpm -Uvh "${release_path}"
     report_step_done 'Install almalinux-release package'
     # replace GUI packages
@@ -261,10 +319,24 @@ distro_sync() {
     return ${ret_code}
 }
 
+grub_update() {
+    if [ -d /sys/firmware/efi ]; then
+        if [ -d /boot/efi/EFI/almalinux ]; then
+            grub2-mkconfig -o /boot/efi/EFI/almalinux/grub.cfg
+        elif [ -d /boot/efi/EFI/centos ]; then
+            grub2-mkconfig -o /boot/efi/EFI/centos/grub.cfg
+        else
+            grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+        fi
+    else
+        grub2-mkconfig -o /boot/grub2/grub.cfg
+    fi
+}
+
 main() {
     local arch
     local os_version
-    local os_id
+    local os_type
     local release_url
     local tmp_dir
     local release_path
@@ -273,10 +345,11 @@ main() {
     assert_run_as_root
     assert_secureboot_disabled
     arch="$(get_system_arch)"
-    os_version="$(get_os_release_var 'VERSION_ID')"
-    os_version="${os_version:0:1}"
-    os_id="$(get_os_release_var 'ID')"
-    assert_supported_system "${os_id}" "${os_version}" "${arch}"
+    os_type="$(get_os_release_var 'ID')"
+    os_version="$(get_os_version "${os_type}")"
+    #os_version="$(get_os_release_var 'VERSION_ID')"
+    #os_version="${os_version:0:1}"
+    assert_supported_system "${os_type}" "${os_version}" "${arch}"
 
     read -r panel_type panel_version < <(get_panel_info)
     assert_supported_panel "${panel_type}" "${panel_version}"
@@ -293,17 +366,22 @@ main() {
     assert_valid_package "${release_path}"
     report_step_done 'Verify almalinux-release package'
 
-    case "${os_id}" in
-    centos)
+    assert_compatible_os_version "${os_version}" "${release_path}"
+
+    case "${os_type}" in
+    almalinux|centos|ol|rhel)
+        backup_issue
         migrate_from_centos "${release_path}"
         ;;
     *)
-        report_step_error "Migrate ${os_id}: not supported"
+        report_step_error "Migrate ${os_type}: not supported"
         exit 1
         ;;
     esac
 
     distro_sync || exit ${?}
+    restore_issue
+    grub_update
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
 
