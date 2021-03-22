@@ -150,10 +150,7 @@ assert_supported_system() {
 assert_supported_panel() {
     local -r panel_type="${1}"
     local -r panel_version="${2}"
-    if [[ "${panel_type}" == 'cpanel' ]]; then
-        report_step_error 'cPanel is not supported yet'
-        exit 1
-    elif [[ "${panel_type}" == 'plesk' ]]; then
+    if [[ "${panel_type}" == 'plesk' ]]; then
         report_step_error 'Plesk is not supported yet'
         exit 1
     fi
