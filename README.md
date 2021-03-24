@@ -43,10 +43,10 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
 
 * [x] CentOS 8 support.
 * [ ] Write debug information to a log file for failed migration analysis.
-* [ ] Oracle Linux 8 support.
-* [ ] RHEL 8 support.
+* [x] Oracle Linux 8 support.
+* [x] RHEL 8 support.
 * [ ] DirectAdmin control panel support.
-* [ ] cPanel control panel support (blocked from cPanel side).
+* [x] cPanel control panel support (blocked from cPanel side).
 * [ ] Plesk control panel support (blocked from Plesk side).
 * [ ] Cover all common scenarios with tests.
 * [ ] Add OpenNebula support to Molecule test suite.
