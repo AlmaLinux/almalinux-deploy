@@ -289,9 +289,12 @@ migrate_from_centos() {
     rpm -Uvh "${release_path}"
     report_step_done 'Install almalinux-release package'
     # replace GUI packages
-    for pkg_name in centos-backgrounds centos-logos centos-indexhtml; do
+    for pkg_name in centos-backgrounds centos-logos centos-indexhtml \
+                    centos-logos-ipa centos-logos-httpd \
+                    oracle-backgrounds oracle-logos oracle-indexhtml \
+                    oracle-logos-ipa oracle-logos-httpd ; do
         if rpm -q "${pkg_name}" &>/dev/null; then
-            alma_pkg="${pkg_name//centos/almalinux}"
+            alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
             rpm -e --nodeps "${pkg_name}"
             report_step_done "Remove ${pkg_name} package"
             if ! output=$(dnf install -y "${alma_pkg}" 2>&1); then
