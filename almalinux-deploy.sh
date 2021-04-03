@@ -10,7 +10,7 @@ set -euo pipefail
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
-VERSION='0.1.6'
+VERSION='0.1.7'
 
 # Reports a completed step using a green color.
 #
