@@ -46,19 +46,23 @@ teardown() {
 }
 
 @test 'assert_secureboot_disabled fails on enabled Secure Boot' {
-    function dmesg() {
-        echo '[    0.000000] secureboot: Secure boot enabled'
+    function mokutil() {
+        case "$1" in
+            '--sb-state' ) echo 'SecureBoot enabled' ;;
+        esac
     }
-    export -f dmesg
+    export -f mokutil
     run assert_secureboot_disabled
     [[ ${status} -ne 0 ]]
 }
 
 @test 'assert_secureboot_disabled passes on disabled Secure Boot' {
-    function dmesg() {
-        echo '[    0.000000] secureboot: Secure boot disabled'
+    function mokutil() {
+        case "$1" in
+            '--sb-state' ) echo 'SecureBoot disabled' ;;
+        esac
     }
-    export -f dmesg
+    export -f mokutil
     run assert_secureboot_disabled
     [[ ${status} -eq 0 ]]
 }

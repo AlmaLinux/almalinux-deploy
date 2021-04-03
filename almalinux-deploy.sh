@@ -56,7 +56,7 @@ assert_run_as_root() {
 # Terminates the program if UEFI Secure Boot is enabled
 assert_secureboot_disabled() {
     local -r message='Check Secure Boot disabled'
-    if dmesg | grep -P 'secureboot:\s+Secure\s+boot\s+enabled' 1>/dev/null; then
+    if LC_ALL='C' mokutil --sb-state 2>/dev/null | grep -P '^SecureBoot\s+enabled' 1>/dev/null; then
         report_step_error "${message}" 'Secure Boot is not supported yet'
         exit 1
     fi
