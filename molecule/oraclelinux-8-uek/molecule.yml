@@ -4,8 +4,8 @@ driver:
 
 platforms:
   - name: oraclelinux-8
-    #box: eurolinux-vagrant/oracle-linux-8
-    box: bento/oracle-8.1
+    box: generic/oracle8
+    #box: bento/oracle-8.1
     memory: 1024
     cpus: 1
 
@@ -13,6 +13,7 @@ provisioner:
   name: ansible
   playbooks:
     converge: ../resources/playbooks/converge.yml
+    #converge: converge.yml
 
 verifier:
   name: testinfra
@@ -20,7 +21,7 @@ verifier:
     v: true
 
 scenario:
-  name: oraclelinux-8
+  name: oraclelinux-8-uek
   test_sequence:
     - lint
     - destroy
