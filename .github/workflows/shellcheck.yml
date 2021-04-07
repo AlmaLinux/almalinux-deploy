@@ -23,3 +23,6 @@ jobs:
       uses: ludeeus/action-shellcheck@master
 
 # for more options https://github.com/marketplace/actions/shellcheck
+  bats:
+    name: Bats testing
+    run: bats test_almalinux-deploy.bats
