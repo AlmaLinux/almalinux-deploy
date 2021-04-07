@@ -239,7 +239,7 @@ assert_compatible_os_version() {
 backup_issue() {
     for file in $(rpm -Vf /etc/issue | cut -d' ' -f4); do
         if [[ ${file} =~ "/etc/issue" ]]; then
-            cp "${file}" "${file}".bak
+            cp "${file}" "${file}.bak"
         fi
     done
 }
@@ -294,7 +294,7 @@ migrate_from_centos() {
                     oracle-backgrounds oracle-logos oracle-indexhtml \
                     oracle-logos-ipa oracle-logos-httpd ; do
         if rpm -q "${pkg_name}" &>/dev/null; then
-            alma_pkg="${pkg_name//centos\|oracle/almalinux}"
+            alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
             rpm -e --nodeps "${pkg_name}"
             report_step_done "Remove ${pkg_name} package"
             if ! output=$(dnf install -y "${alma_pkg}" 2>&1); then
