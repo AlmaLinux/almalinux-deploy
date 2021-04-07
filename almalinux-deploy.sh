@@ -239,7 +239,7 @@ assert_compatible_os_version() {
 backup_issue() {
     for file in $(rpm -Vf /etc/issue | cut -d' ' -f4); do
         if [[ ${file} =~ "/etc/issue" ]]; then
-            cp ${file} ${file}.bak
+            cp "${file}" "${file}".bak
         fi
     done
 }
