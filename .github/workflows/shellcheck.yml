@@ -25,4 +25,7 @@ jobs:
 # for more options https://github.com/marketplace/actions/shellcheck
   bats:
     name: Bats testing
-    run: bats test_almalinux-deploy.bats
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Bats 
+        run: bats test_almalinux-deploy.bats
