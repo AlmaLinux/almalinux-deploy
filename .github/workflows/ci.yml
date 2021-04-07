@@ -21,8 +21,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
-      # env:
-      #   SHELLCHECK_OPTS: -e SC2001
 
 # for more options https://github.com/marketplace/actions/shellcheck
   bats:
