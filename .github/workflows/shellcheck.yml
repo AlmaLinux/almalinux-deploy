@@ -30,5 +30,6 @@ jobs:
       - name: Setup Bats
         run: sudo apt-get install bats
 
+      - uses: actions/checkout@v2
       - name: Test Bats 
         run: bats test_almalinux-deploy.bats
