@@ -294,6 +294,7 @@ migrate_from_centos() {
                     oracle-backgrounds oracle-logos oracle-indexhtml \
                     oracle-logos-ipa oracle-logos-httpd ; do
         if rpm -q "${pkg_name}" &>/dev/null; then
+            # shellcheck disable=SC2001
             alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
             rpm -e --nodeps "${pkg_name}"
             report_step_done "Remove ${pkg_name} package"
