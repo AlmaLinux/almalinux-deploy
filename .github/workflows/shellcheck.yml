@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Bats
-        run: apt install bats
+        run: sudo apt-get install bats
 
       - name: Test Bats 
         run: bats test_almalinux-deploy.bats
