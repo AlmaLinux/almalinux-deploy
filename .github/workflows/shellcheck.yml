@@ -28,4 +28,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Test Bats 
-        run: bats test_almalinux-deploy.bats
+        run: bin/bats test_almalinux-deploy.bats
