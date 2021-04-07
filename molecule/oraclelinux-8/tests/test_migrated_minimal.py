@@ -1,1 +1,0 @@
-../../resources/tests/test_migrated_minimal.py
