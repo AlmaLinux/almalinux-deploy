@@ -247,7 +247,7 @@ backup_issue() {
 # Restore /etc/issue* files
 restore_issue() {
     for file in /etc/issue /etc/issue.net; do
-        [ -f "${file}.bak" ] && mv ${file}.bak ${file}
+        [ ! -f "${file}.bak" ] || mv -f ${file}.bak ${file}
     done
 }
 
@@ -292,10 +292,19 @@ migrate_from_centos() {
     for pkg_name in centos-backgrounds centos-logos centos-indexhtml \
                     centos-logos-ipa centos-logos-httpd \
                     oracle-backgrounds oracle-logos oracle-indexhtml \
-                    oracle-logos-ipa oracle-logos-httpd ; do
+                    oracle-logos-ipa oracle-logos-httpd \
+                    oracle-epel-release-el8; do
         if rpm -q "${pkg_name}" &>/dev/null; then
             # shellcheck disable=SC2001
-            alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
+            alma_pkg=""
+            case ${pkg_name} in
+                oracle-epel-release-el8)
+                    alma_pkg="epel-release"
+                    ;;
+                *)
+                    alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
+                    ;;
+            esac
             rpm -e --nodeps "${pkg_name}"
             report_step_done "Remove ${pkg_name} package"
             if ! output=$(dnf install -y "${alma_pkg}" 2>&1); then
@@ -318,6 +327,16 @@ distro_sync() {
     }
     report_step_done "${step}"
     return ${ret_code}
+}
+
+install_kernel() {
+    if ! output=$(rpm -q kernel 2>&1); then
+        if output=$(dnf -y install kernel 2>&1); then
+            report_step_done "Install AlmaLinux kernel"
+        else
+            report_step_error "Install AlmaLinux kernel"
+        fi
+    fi
 }
 
 grub_update() {
@@ -382,6 +401,7 @@ main() {
 
     distro_sync || exit ${?}
     restore_issue
+    install_kernel
     grub_update
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
