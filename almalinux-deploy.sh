@@ -302,6 +302,7 @@ migrate_from_centos() {
                     alma_pkg="epel-release"
                     ;;
                 *)
+                    # shellcheck disable=SC2001
                     alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
                     ;;
             esac
