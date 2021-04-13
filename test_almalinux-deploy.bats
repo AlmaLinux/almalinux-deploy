@@ -4,7 +4,7 @@ source almalinux-deploy.sh
 setup() {
     if [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_release_var' ]] \
        || [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_version' ]]; then
-        MOCKED_OS_RELEASE=$(tempfile -d ${BATS_TMPDIR} -p osrel_)
+        MOCKED_OS_RELEASE=$(mktemp -p ${BATS_TMPDIR} osrel_XXXX )
     fi
 }
 
@@ -124,8 +124,8 @@ teardown() {
     done
 }
 
-@test 'assert_supported_system fails on non-centos' {
-    for os_id in 'fedora' 'ol' 'rhel'; do
+@test 'assert_supported_system fails on unsupported distributions' {
+    for os_id in 'fedora' 'rocky' 'virtuozzo'; do
         run assert_supported_system "${os_id}" '8' 'x86_64'
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]

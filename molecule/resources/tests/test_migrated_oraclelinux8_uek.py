@@ -1,7 +1,7 @@
 import pytest
 
 
-def test_release_package_installed(host):
+def test_kernel_uek_installed(host):
     pkg = host.package('kernel-uek')
     assert not pkg.is_installed
     #assert pkg.version.startswith('5.4')
