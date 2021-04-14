@@ -1,0 +1,1 @@
+../../resources/tests/test_migrated_oraclelinux8.py

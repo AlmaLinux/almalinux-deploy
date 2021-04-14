@@ -1,0 +1,17 @@
+---
+- name: Install Oracle packages
+  dnf:
+    name: 
+      - oracle-epel-release-el8
+      - oracle-logos-httpd
+      - oracle-logos
+    state: latest
+
+#- name: Reboot VM
+#  reboot:
+
+#- name: Wait for reboot
+#  wait_for_connection:
+#    delay: 60
+#    sleep: 5
+#    timeout: 300

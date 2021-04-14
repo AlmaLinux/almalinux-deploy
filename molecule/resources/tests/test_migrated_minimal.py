@@ -22,3 +22,6 @@ def test_grub_default(host):
 def test_centos_packages_removed(host, name):
     pkg = host.package(name)
     assert not pkg.is_installed
+    
+    
+

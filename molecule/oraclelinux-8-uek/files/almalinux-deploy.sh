@@ -1,0 +1,1 @@
+../../../almalinux-deploy.sh

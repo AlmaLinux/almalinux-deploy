@@ -1,0 +1,32 @@
+---
+driver:
+  name: vagrant
+
+platforms:
+  - name: oraclelinux-8
+    #box: eurolinux-vagrant/oracle-linux-8
+    box: bento/oracle-8.1
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ../resources/playbooks/converge.yml
+
+verifier:
+  name: testinfra
+  options:
+    v: true
+
+scenario:
+  name: oraclelinux-8
+  test_sequence:
+    - lint
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - verify
+    - destroy
