@@ -309,7 +309,7 @@ migrate_from_centos() {
                     ;;
                 *)
                     # shellcheck disable=SC2001
-                    alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle\|redhat#almalinux#')"
+                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat#almalinux#')"
                     ;;
             esac
             rpm -e --nodeps "${pkg_name}"
