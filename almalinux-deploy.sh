@@ -293,7 +293,9 @@ migrate_from_centos() {
                     centos-logos-ipa centos-logos-httpd \
                     oracle-backgrounds oracle-logos oracle-indexhtml \
                     oracle-logos-ipa oracle-logos-httpd \
-                    oracle-epel-release-el8; do
+                    oracle-epel-release-el8 \
+                    redhat-backgrounds redhat-logos redhat-indexhtml \
+                    redhat-logos-ipa redhat-logos-httpd; do
         if rpm -q "${pkg_name}" &>/dev/null; then
             # shellcheck disable=SC2001
             alma_pkg=""
@@ -303,7 +305,7 @@ migrate_from_centos() {
                     ;;
                 *)
                     # shellcheck disable=SC2001
-                    alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle#almalinux#')"
+                    alma_pkg="$(echo $pkg_name | sed 's#centos\|oracle\|redhat#almalinux#')"
                     ;;
             esac
             rpm -e --nodeps "${pkg_name}"
