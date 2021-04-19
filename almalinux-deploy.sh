@@ -12,19 +12,19 @@ OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
 VERSION='0.1.8'
 
-BRANDING_PKGS='centos-backgrounds centos-logos centos-indexhtml \
+BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 centos-logos-ipa centos-logos-httpd \
                 oracle-backgrounds oracle-logos oracle-indexhtml \
                 oracle-logos-ipa oracle-logos-httpd \
                 oracle-epel-release-el8 \
                 redhat-backgrounds redhat-logos redhat-indexhtml \
-                redhat-logos-ipa redhat-logos-httpd'
+                redhat-logos-ipa redhat-logos-httpd"
 
-REMOVE_PKGS='centos-linux-release centos-gpg-keys centos-linux-repos \
+REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
                 libreport-plugin-rhtsupport libreport-rhel insights-client \
                 libreport-rhel-anaconda-bugzilla libreport-rhel-bugzilla \
                 oraclelinux-release oraclelinux-release-el8 \
-                redhat-release redhat-release-eula'
+                redhat-release redhat-release-eula"
 
 # Reports a completed step using a green color.
 #
