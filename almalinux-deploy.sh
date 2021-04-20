@@ -7,6 +7,8 @@
 
 set -euo pipefail
 
+exec > >(tee /var/log/almalinux-deploy.log)
+
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
@@ -360,6 +362,15 @@ grub_update() {
     fi
 }
 
+# Check do we have custom kernel (e.g. kernel-uek) and print warning
+check_custom_kernel() {
+output=$(rpm -qa | grep kernel-uek) || :
+if [ -n "${output}" ]; then
+    echo -e "[31;1mYou've had kernels that now can't be booting[0m:"
+    echo $output | sed 's# #\n#'
+fi
+}
+
 main() {
     local arch
     local os_version
@@ -410,6 +421,7 @@ main() {
     restore_issue
     install_kernel
     grub_update
+    check_custom_kernel
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
 
