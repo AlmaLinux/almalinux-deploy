@@ -12,7 +12,7 @@ exec > >(tee /var/log/almalinux-deploy.log)
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
-VERSION='0.1.8'
+VERSION='0.1.9'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 centos-logos-ipa centos-logos-httpd \
@@ -367,6 +367,7 @@ check_custom_kernel() {
 output=$(rpm -qa | grep kernel-uek) || :
 if [ -n "${output}" ]; then
     echo -e "[31;1mYou've had kernels that now can't be booting[0m:"
+    # shellcheck disable=SC2001
     echo $output | sed 's# #\n#'
 fi
 }
