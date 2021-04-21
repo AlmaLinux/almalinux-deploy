@@ -364,12 +364,16 @@ grub_update() {
 
 # Check do we have custom kernel (e.g. kernel-uek) and print warning
 check_custom_kernel() {
-output=$(rpm -qa | grep kernel-uek) || :
-if [ -n "${output}" ]; then
-    echo -e "[31;1mYou've had kernels that now can't be booting[0m:"
-    # shellcheck disable=SC2001,SC2086
-    echo $output | sed 's# #\n#'
-fi
+    local output=$(rpm -qa | grep kernel-uek) || :
+    if [ -n "${output}" ]; then
+        echo -ne "\n!! [31;1mYou've had kernels that can't be booted in
+Secure Boot mode[0m:\n"
+        # shellcheck disable=SC2001,SC2086
+        echo "$output" | sed 's# #\n#'
+        echo ""
+        echo "If you don't need them, you can remove them by using the 'dnf remove" \
+            "${output}' command"
+    fi
 }
 
 main() {
