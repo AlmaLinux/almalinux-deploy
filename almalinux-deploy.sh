@@ -364,7 +364,8 @@ grub_update() {
 
 # Check do we have custom kernel (e.g. kernel-uek) and print warning
 check_custom_kernel() {
-    local output=$(rpm -qa | grep kernel-uek) || :
+    local output
+    output=$(rpm -qa | grep kernel-uek) || :
     if [ -n "${output}" ]; then
         echo -ne "\n!! [31;1mYou've had kernels that can't be booted in
 Secure Boot mode[0m:\n"
