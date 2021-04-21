@@ -367,7 +367,7 @@ check_custom_kernel() {
 output=$(rpm -qa | grep kernel-uek) || :
 if [ -n "${output}" ]; then
     echo -e "[31;1mYou've had kernels that now can't be booting[0m:"
-    # shellcheck disable=SC2086
+    # shellcheck disable=SC2001,SC2086
     echo $output | sed 's# #\n#'
 fi
 }
