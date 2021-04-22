@@ -368,8 +368,8 @@ check_custom_kernel() {
     output=$(rpm -qa | grep kernel-uek) || :
     if [ -n "${output}" ]; then
         if [ -x /usr/bin/mokutil ] && /usr/bin/mokutil --sb-state 2>&1 | grep -q enabled; then
-            echo -ne "\n!! [31;1mYou've had kernels that can't be booted in
-Secure Boot mode[0m:\n"
+            echo -ne "\n!! [31;1mThere are kernels left from previous operating system
+that won't boot in Secure Boot mode anymore[0m:\n"
         else
             echo "There are kernels left from previous operating system:"
         fi
