@@ -367,8 +367,12 @@ check_custom_kernel() {
     local output
     output=$(rpm -qa | grep kernel-uek) || :
     if [ -n "${output}" ]; then
-        echo -ne "\n!! [31;1mYou've had kernels that can't be booted in
+        if [ -x /usr/bin/mokutil ] && /usr/bin/mokutil --sb-state 2>&1 | grep -q enabled; then
+            echo -ne "\n!! [31;1mYou've had kernels that can't be booted in
 Secure Boot mode[0m:\n"
+        else
+            echo "There are kernels left from previous operating system:"
+        fi
         # shellcheck disable=SC2001,SC2086
         echo "$output" | sed 's# #\n#'
         echo ""
