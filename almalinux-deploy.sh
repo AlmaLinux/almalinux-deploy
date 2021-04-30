@@ -381,6 +381,28 @@ that won't boot in Secure Boot mode anymore[0m:\n"
     fi
 }
 
+# Backup and restore symbol links from java-openjdk-headless package
+# https://bugzilla.redhat.com/show_bug.cgi?id=1200302
+javaBackup=$(mktemp /tmp/java_backup.XXXXXX)
+
+backup_java_links() {
+    update-alternatives --display java | grep -oP '(?<=slave ).*' | sed -e 's#\(\S*\): \(\S*\)#\2 \1#' > "${javaBackup}"
+}
+
+restore_java_links() {
+    pushd /etc/alternatives
+    while IFS= read -r line; do
+        if [[ -n ${line} ]]; then
+            forig=$(echo "${line}" | cut -f1 -d' ')
+            flink=$(echo "${line}" | cut -f2 -d' ')
+            if [[ ! -e ${flink} ]]; then
+                ln -s "${forig}" "${flink}"
+            fi
+        fi
+    done < "${javaBackup}"
+    popd
+}
+
 main() {
     local arch
     local os_version
@@ -427,7 +449,9 @@ main() {
         ;;
     esac
 
+    backup_java_links
     distro_sync || exit ${?}
+    restore_java_links
     restore_issue
     install_kernel
     grub_update
