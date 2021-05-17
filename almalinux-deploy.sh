@@ -7,10 +7,12 @@
 
 set -euo pipefail
 
+exec > >(tee /var/log/almalinux-deploy.log)
+
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
-VERSION='0.1.8'
+VERSION='0.1.9'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 centos-logos-ipa centos-logos-httpd \
@@ -360,6 +362,47 @@ grub_update() {
     fi
 }
 
+# Check do we have custom kernel (e.g. kernel-uek) and print warning
+check_custom_kernel() {
+    local output
+    output=$(rpm -qa | grep kernel-uek) || :
+    if [ -n "${output}" ]; then
+        if [ -x /usr/bin/mokutil ] && /usr/bin/mokutil --sb-state 2>&1 | grep -q enabled; then
+            echo -ne "\n!! [31;1mThere are kernels left from previous operating system
+that won't boot in Secure Boot mode anymore[0m:\n"
+        else
+            echo "There are kernels left from previous operating system:"
+        fi
+        # shellcheck disable=SC2001,SC2086
+        echo "$output" | sed 's# #\n#'
+        echo ""
+        echo "If you don't need them, you can remove them by using the 'dnf remove" \
+            "${output}' command"
+    fi
+}
+
+# Backup and restore symbol links from java-openjdk-headless package
+# https://bugzilla.redhat.com/show_bug.cgi?id=1200302
+javaBackup=$(mktemp /tmp/java_backup.XXXXXX)
+
+backup_java_links() {
+    update-alternatives --display java | grep -oP '(?<=slave ).*' | sed -e 's#\(\S*\): \(\S*\)#\2 \1#' > "${javaBackup}"
+}
+
+restore_java_links() {
+    pushd /etc/alternatives
+    while IFS= read -r line; do
+        if [[ -n ${line} ]]; then
+            forig=$(echo "${line}" | cut -f1 -d' ')
+            flink=$(echo "${line}" | cut -f2 -d' ')
+            if [[ ! -e ${flink} ]]; then
+                ln -s "${forig}" "${flink}"
+            fi
+        fi
+    done < "${javaBackup}"
+    popd
+}
+
 main() {
     local arch
     local os_version
@@ -406,10 +449,13 @@ main() {
         ;;
     esac
 
+    backup_java_links
     distro_sync || exit ${?}
+    restore_java_links
     restore_issue
     install_kernel
     grub_update
+    check_custom_kernel
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
 
