@@ -12,6 +12,8 @@ exec > >(tee /var/log/almalinux-deploy.log)
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
+# AlmaLinux OS 8.3
+MINIMAL_SUPPORTED_VERSION='8.3'
 VERSION='0.1.9'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
@@ -147,7 +149,7 @@ assert_supported_system() {
         report_step_error "Check ${arch} architecture is supported"
         exit 1
     fi
-    if [[ ${os_version} -ne 8 ]]; then
+    if [[ ${os_version} -ne ${MINIMAL_SUPPORTED_VERSION:0:1} ]]; then
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
@@ -244,9 +246,14 @@ assert_compatible_os_version() {
     local -r release_path="${2}"
     local alma_version
     alma_version=$(rpm -qp --queryformat '%{version}' "${release_path}")
-    if [[ "${alma_version}" != "${os_version}" ]]; then
-        report_step_error "Check OS is up to date" \
-            "Please upgrade your OS from ${os_version} to ${alma_version} and retry"
+
+    if [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
+        report_step_error "Please upgrade your OS from ${os_version} to" \
+        "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
+        exit 1
+    fi
+    if [[ "${os_version:2:3}" -gt "${alma_version:2:3}" ]]; then
+        report_step_error "Version of you OS ${os_version} is not supported yet"
         exit 1
     fi
 }
@@ -386,10 +393,16 @@ that won't boot in Secure Boot mode anymore[0m:\n"
 javaBackup=$(mktemp /tmp/java_backup.XXXXXX)
 
 backup_java_links() {
-    update-alternatives --display java | grep -oP '(?<=slave ).*' | sed -e 's#\(\S*\): \(\S*\)#\2 \1#' > "${javaBackup}"
+    local java_alternatives
+    # do nothing if java alternatives don't exist
+    if java_alternatives="$(update-alternatives --display java)"; then
+        echo "${java_alternatives}" | grep -oP '(?<=slave ).*' | sed -e 's#\(\S*\): \(\S*\)#\2 \1#' > "${javaBackup}"
+    fi
 }
 
 restore_java_links() {
+    # do nothing if a backup of java alternatives symlinks doesn't exist
+    [[ ! -s "${javaBackup}" ]] && return 0
     pushd /etc/alternatives
     while IFS= read -r line; do
         if [[ -n ${line} ]]; then
