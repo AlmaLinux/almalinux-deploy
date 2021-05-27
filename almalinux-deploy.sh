@@ -248,8 +248,8 @@ assert_compatible_os_version() {
     alma_version=$(rpm -qp --queryformat '%{version}' "${release_path}")
 
     if [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
-        report_step_error "Check OS is up to date" \
-            "Please upgrade your OS from ${os_version} to ${alma_version} and retry"
+        report_step_error "Please upgrade your OS from ${os_version} to" \
+        "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
         exit 1
     fi
     if [[ "${os_version:2:3}" -gt "${alma_version:2:3}" ]]; then
