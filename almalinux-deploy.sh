@@ -13,10 +13,11 @@ BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
 # AlmaLinux OS 8.3
-MINIMAL_SUPPORTED_VERSION='8.3'
+MINIMAL_SUPPORTED_VERSION='8'
 VERSION='0.1.9'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
+                centos-stream-release centos-stream-repos\
                 centos-logos-ipa centos-logos-httpd \
                 oracle-backgrounds oracle-logos oracle-indexhtml \
                 oracle-logos-ipa oracle-logos-httpd \
@@ -100,7 +101,7 @@ get_os_version() {
     local -r os_type="${1}"
     local os_version
     if [[ "${os_type}" == 'centos' ]]; then
-        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
+        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+(\.\d+)?)' \
                                     "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
             report_step_error "Detect ${os_type} version"
         fi
