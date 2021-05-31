@@ -71,16 +71,6 @@ assert_run_as_root() {
     report_step_done 'Check root privileges'
 }
 
-# Terminates the program if UEFI Secure Boot is enabled
-assert_secureboot_disabled() {
-    local -r message='Check Secure Boot disabled'
-    if LC_ALL='C' mokutil --sb-state 2>/dev/null | grep -P '^SecureBoot\s+enabled' 1>/dev/null; then
-        report_step_error "${message}" 'Secure Boot is not supported yet'
-        exit 1
-    fi
-    report_step_done "${message}"
-}
-
 # Prints a system architecture.
 get_system_arch() {
     uname -i
@@ -426,7 +416,6 @@ main() {
     local panel_type
     local panel_version
     assert_run_as_root
-    assert_secureboot_disabled
     arch="$(get_system_arch)"
     os_type="$(get_os_release_var 'ID')"
     os_version="$(get_os_version "${os_type}")"
