@@ -17,7 +17,6 @@ MINIMAL_SUPPORTED_VERSION='8'
 VERSION='0.1.9'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
-                centos-stream-release centos-stream-repos\
                 centos-logos-ipa centos-logos-httpd \
                 oracle-backgrounds oracle-logos oracle-indexhtml \
                 oracle-logos-ipa oracle-logos-httpd \
@@ -26,6 +25,7 @@ BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 redhat-logos-ipa redhat-logos-httpd"
 
 REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
+                centos-stream-release centos-stream-repos kpatch kpatch-dnf\
                 libreport-plugin-rhtsupport libreport-rhel insights-client \
                 libreport-rhel-anaconda-bugzilla libreport-rhel-bugzilla \
                 oraclelinux-release oraclelinux-release-el8 \
