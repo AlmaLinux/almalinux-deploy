@@ -101,7 +101,7 @@ get_os_version() {
     local -r os_type="${1}"
     local os_version
     if [[ "${os_type}" == 'centos' ]]; then
-        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+(\.\d+)?)' \
+        if ! os_version="$(grep -oP 'CentOS\s+(Linux|Stream)\s+release\s+\K(\d+(\.\d+)?)' \
                                     "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
             report_step_error "Detect ${os_type} version"
         fi
