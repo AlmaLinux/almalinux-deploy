@@ -416,6 +416,26 @@ restore_java_links() {
     popd
 }
 
+
+add_efi_boot_record() {
+    if [[ ! -d /sys/firmware/efi ]]; then
+        return
+    fi
+    efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi"
+    report_step_done "The new EFI boot record for AlmaLinux is added"
+}
+
+
+reinstall_secure_boot_packages() {
+    for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2|kernel'); do
+        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}')" ]]; then
+            yum reinstall "${pkg}" -y
+        fi
+    done
+    report_step_done "All Secure Boot related packages which were released by not AlmaLinux are reinstalled"
+}
+
+
 main() {
     local arch
     local os_version
@@ -426,7 +446,6 @@ main() {
     local panel_type
     local panel_version
     assert_run_as_root
-    assert_secureboot_disabled
     arch="$(get_system_arch)"
     os_type="$(get_os_release_var 'ID')"
     os_version="$(get_os_version "${os_type}")"
@@ -468,6 +487,8 @@ main() {
     restore_issue
     install_kernel
     grub_update
+    reinstall_secure_boot_packages
+    add_efi_boot_record
     check_custom_kernel
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
