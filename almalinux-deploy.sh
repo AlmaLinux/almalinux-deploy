@@ -50,7 +50,7 @@ save_status_of_stage() {
 
 # Get a status of a stage for continue of it
 # $1 - name of a stage
-# The function returns 0 if stage isn't completed and 1 if it's completed
+# The function returns 1 if stage isn't completed and 0 if it's completed
 get_status_of_stage() {
     if [[ 0 != "$(id -u)" ]]; then
         # the function is called in tests and should be skipped
