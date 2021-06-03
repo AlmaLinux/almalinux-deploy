@@ -1,3 +1,4 @@
+#!/usr/bin/env bats
 source almalinux-deploy.sh
 
 
@@ -105,6 +106,7 @@ teardown() {
 
 @test 'assert_supported_system passes on CentOS-8 x86_64' {
     run assert_supported_system 'centos' '8' 'x86_64'
+    echo "${output}"
     [[ ${status} -eq 0 ]]
 }
 
