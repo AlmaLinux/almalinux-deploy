@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+
 # Description: EL to AlmaLinux migration script.
 # License: GPLv3.
 # Environment variables:
