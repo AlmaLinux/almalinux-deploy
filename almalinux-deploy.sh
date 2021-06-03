@@ -12,6 +12,7 @@ exec > >(tee /var/log/almalinux-deploy.log)
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
+STAGE_STATUSES_DIR='/var/run/almalinux-deploy-statuses'
 # AlmaLinux OS 8.3
 MINIMAL_SUPPORTED_VERSION='8.3'
 VERSION='0.1.9'
@@ -29,6 +30,32 @@ REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
                 libreport-rhel-anaconda-bugzilla libreport-rhel-bugzilla \
                 oraclelinux-release oraclelinux-release-el8 \
                 redhat-release redhat-release-eula"
+
+# Save the successful status of a stage for future continue of it
+# $1 - name of a stage
+save_status_of_stage() {
+    local -r stage_name="${1}"
+    if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
+        mkdir -p "${STAGE_STATUSES_DIR}"
+    fi
+    touch "${STAGE_STATUSES_DIR}/${stage_name}"
+}
+
+
+# Get a status of a stage for continue of it
+# $1 - name of a stage
+# The function returns 1 if stage isn't completed and 0 if it's completed
+get_status_of_stage() {
+    local -r stage_name="${1}"
+    if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
+        return 1
+    fi
+    if [[ ! -f "${STAGE_STATUSES_DIR}/${stage_name}" ]]; then
+        return 1
+    fi
+    return 0
+}
+
 
 # Reports a completed step using a green color.
 #
@@ -142,6 +169,9 @@ get_panel_info() {
 # $2 - Operational system version (e.g. 8 or 8.3).
 # $3 - System architecture (e.g. x86_64).
 assert_supported_system() {
+    if get_status_of_stage "assert_supported_system"; then
+        return 0
+    fi
     local -r os_type="${1}"
     local -r os_version="${2:0:1}"
     local -r arch="${3}"
@@ -159,6 +189,7 @@ assert_supported_system() {
         exit 1
     fi
     report_step_done "Check ${os_type}-${os_version}.${arch} is supported"
+    save_status_of_stage "assert_supported_system"
 }
 
 # Terminates the program if a control panel is not supported by AlmaLinux.
@@ -166,12 +197,16 @@ assert_supported_system() {
 # $1 - Control panel type.
 # $2 - Control panel version.
 assert_supported_panel() {
+    if get_status_of_stage "assert_supported_panel"; then
+        return 0
+    fi
     local -r panel_type="${1}"
     local -r panel_version="${2}"
     if [[ "${panel_type}" == 'plesk' ]]; then
         report_step_error 'Plesk is not supported yet'
         exit 1
     fi
+    save_status_of_stage "assert_supported_panel"
 }
 
 # Returns a latest almalinux-release RPM package download URL.
@@ -190,6 +225,9 @@ get_release_file_url() {
 #
 # $1 - Temporary directory path.
 install_rpm_pubkey() {
+    if get_status_of_stage "install_rpm_pubkey"; then
+        return 0
+    fi
     local -r tmp_dir="${1}"
     local -r pubkey_url="${ALMA_PUBKEY_URL:-https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux}"
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
@@ -204,6 +242,7 @@ install_rpm_pubkey() {
     rpm --import "${pubkey_path}"
     report_step_done 'Import RPM-GPG-KEY-AlmaLinux to RPM DB'
     rm -f "${pubkey_path}"
+    save_status_of_stage "install_rpm_pubkey"
 }
 
 # Downloads almalinux-release package.
