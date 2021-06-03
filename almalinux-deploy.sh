@@ -58,12 +58,12 @@ get_status_of_stage() {
     fi
     local -r stage_name="${1}"
     if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
-        return 0
+        return 1
     fi
     if [[ ! -f "${STAGE_STATUSES_DIR}/${stage_name}" ]]; then
-        return 0
+        return 1
     fi
-    return 1
+    return 0
 }
 
 
@@ -556,11 +556,16 @@ reinstall_secure_boot_packages() {
     if get_status_of_stage "reinstall_secure_boot_packages"; then
         return 0
     fi
-    for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2|kernel'); do
+    local kernel_package
+    for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2'); do
         if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
             yum reinstall "${pkg}" -y
         fi
     done
+    kernel_package="$(rpm -qf "$(grubby --default-kernel)")"
+    if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
+        yum reinstall "${kernel_package}" -y
+    fi
     report_step_done "All Secure Boot related packages which were released by not AlmaLinux are reinstalled"
     save_status_of_stage "reinstall_secure_boot_packages"
 }
