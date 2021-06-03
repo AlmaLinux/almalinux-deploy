@@ -229,7 +229,8 @@ assert_supported_panel() {
     local micro
     local error_msg="${panel_type} version \"${panel_version}\" is not supported. Please update the control panel to version \"${plesk_min_major}.${plesk_min_minor}.${plesk_min_micro}\"."
     if [[ "${panel_type}" == 'plesk' ]]; then
-IFS=. read -r major minor micro << EOF
+    local IFS=.
+read -r major minor micro << EOF
 ${panel_version}
 EOF
         if [[ -z ${micro} ]]; then
