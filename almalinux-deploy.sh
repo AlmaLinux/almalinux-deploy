@@ -60,7 +60,7 @@ get_status_of_stage() {
 
 is_migration_completed() {
     if get_status_of_stage "completed"; then
-        printf '\n\033[0;32mMigration to AlmaLinux was alredy completed\033[0m\n'
+        printf '\n\033[0;32mMigration to AlmaLinux was already completed\033[0m\n'
         exit 0
     fi
 }
@@ -522,7 +522,7 @@ reinstall_secure_boot_packages() {
         return 0
     fi
     for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2|kernel'); do
-        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}')" ]]; then
+        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' $pkg)" ]]; then
             yum reinstall "${pkg}" -y
         fi
     done
