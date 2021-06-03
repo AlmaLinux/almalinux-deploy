@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 # Description: EL to AlmaLinux migration script.
 # License: GPLv3.
 # Environment variables:
@@ -37,7 +38,7 @@ REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
 save_status_of_stage() {
     if [[ 0 != "$(id -u)" ]]; then
         # the function is called in tests and should be skipped
-        return 1
+        return 0
     fi
     local -r stage_name="${1}"
     if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
@@ -207,6 +208,7 @@ assert_supported_system() {
     fi
     report_step_done "Check ${os_type}-${os_version}.${arch} is supported"
     save_status_of_stage "assert_supported_system"
+    return 0
 }
 
 # Terminates the program if a control panel is not supported by AlmaLinux.
