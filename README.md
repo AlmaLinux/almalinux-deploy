@@ -10,12 +10,6 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
 1. Make a backup of the system. We didn't test all possible scenarios so there
    is a risk that something goes wrong. In such a situation you will have a
    restore point.
-2. Disable Secure Boot because AlmaLinux doesn't support it yet
-   ([almbz#3](https://bugs.almalinux.org/view.php?id=3)). Detailed instructions
-   for bare metal hardware can be found
-   [here](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/disabling-secure-boot#disable-secure-boot).
-   Instructions for VMWare are available
-   [here](https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.vsphere.security.doc/GUID-898217D4-689D-4EB5-866C-888353FE241C.html).
 3. Download the [almalinux-deploy.sh](almalinux-deploy.sh) script:
    ```shell
    $ curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
@@ -45,9 +39,9 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
 * [ ] Write debug information to a log file for failed migration analysis.
 * [x] Oracle Linux 8 support.
 * [x] RHEL 8 support.
-* [ ] DirectAdmin control panel support.
+* [x] DirectAdmin control panel support.
 * [x] cPanel control panel support.
-* [ ] Plesk control panel support (blocked from Plesk side).
+* [x] Plesk control panel support.
 * [ ] Cover all common scenarios with tests.
 * [ ] Add OpenNebula support to Molecule test suite.
 
