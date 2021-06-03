@@ -37,7 +37,7 @@ REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
 save_status_of_stage() {
     if [[ 0 != "$(id -u)" ]]; then
         # the function is called in tests and should be skipped
-        return 0
+        return 1
     fi
     local -r stage_name="${1}"
     if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
@@ -53,7 +53,7 @@ save_status_of_stage() {
 get_status_of_stage() {
     if [[ 0 != "$(id -u)" ]]; then
         # the function is called in tests and should be skipped
-        return 0
+        return 1
     fi
     local -r stage_name="${1}"
     if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
