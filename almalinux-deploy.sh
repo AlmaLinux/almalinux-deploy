@@ -13,8 +13,8 @@ BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
 # AlmaLinux OS 8.3
-MINIMAL_SUPPORTED_VERSION='8'
-VERSION='0.1.9'
+MINIMAL_SUPPORTED_VERSION='8.3'
+VERSION='0.1.10'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 centos-logos-ipa centos-logos-httpd \
@@ -25,7 +25,6 @@ BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 redhat-logos-ipa redhat-logos-httpd"
 
 REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
-                centos-stream-release centos-stream-repos kpatch kpatch-dnf\
                 libreport-plugin-rhtsupport libreport-rhel insights-client \
                 libreport-rhel-anaconda-bugzilla libreport-rhel-bugzilla \
                 oraclelinux-release oraclelinux-release-el8 \
@@ -72,6 +71,16 @@ assert_run_as_root() {
     report_step_done 'Check root privileges'
 }
 
+# Terminates the program if UEFI Secure Boot is enabled
+assert_secureboot_disabled() {
+    local -r message='Check Secure Boot disabled'
+    if LC_ALL='C' mokutil --sb-state 2>/dev/null | grep -P '^SecureBoot\s+enabled' 1>/dev/null; then
+        report_step_error "${message}" 'Secure Boot is not supported yet'
+        exit 1
+    fi
+    report_step_done "${message}"
+}
+
 # Prints a system architecture.
 get_system_arch() {
     uname -i
@@ -101,7 +110,7 @@ get_os_version() {
     local -r os_type="${1}"
     local os_version
     if [[ "${os_type}" == 'centos' ]]; then
-        if ! os_version="$(grep -oP 'CentOS\s+(Linux|Stream)\s+release\s+\K(\d+(\.\d+)?)' \
+        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
                                     "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
             report_step_error "Detect ${os_type} version"
         fi
@@ -159,9 +168,33 @@ assert_supported_system() {
 assert_supported_panel() {
     local -r panel_type="${1}"
     local -r panel_version="${2}"
+    local plesk_min_major=18
+    local plesk_min_minor=0
+    local plesk_min_micro=35
+    local major
+    local minor
+    local micro
+    local error_msg="${panel_type} version \"${panel_version}\" is not supported. Please update the control panel to version \"${plesk_min_major}.${plesk_min_minor}.${plesk_min_micro}\"."
     if [[ "${panel_type}" == 'plesk' ]]; then
-        report_step_error 'Plesk is not supported yet'
-        exit 1
+IFS=. read -r major minor micro << EOF
+${panel_version}
+EOF
+        if [[ -z ${micro} ]]; then
+            micro=0
+        fi
+        if [[ -z ${minor} ]]; then
+            minor=0
+        fi
+        if [[ ${major} -lt ${plesk_min_major} ]]; then
+            report_step_error "${error_msg}"
+            exit 1
+        elif [[ ${major} -eq ${plesk_min_major} && ${minor} -lt ${plesk_min_minor} ]]; then
+            report_step_error "${error_msg}"
+            exit 1
+        elif [[ ${major} -eq ${plesk_min_major} && ${minor} -eq ${plesk_min_minor} && ${micro} -lt ${plesk_min_micro} ]]; then
+            report_step_error "${error_msg}"
+            exit 1
+        fi
     fi
 }
 
@@ -417,6 +450,7 @@ main() {
     local panel_type
     local panel_version
     assert_run_as_root
+    assert_secureboot_disabled
     arch="$(get_system_arch)"
     os_type="$(get_os_release_var 'ID')"
     os_version="$(get_os_version "${os_type}")"
