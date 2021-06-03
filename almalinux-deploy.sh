@@ -14,7 +14,7 @@ OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
 # AlmaLinux OS 8.3
 MINIMAL_SUPPORTED_VERSION='8.3'
-VERSION='0.1.9'
+VERSION='0.1.10'
 
 BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
                 centos-logos-ipa centos-logos-httpd \
@@ -171,11 +171,10 @@ assert_supported_panel() {
     local plesk_min_major=18
     local plesk_min_minor=0
     local plesk_min_micro=35
-    local plesk_min=18.0.35
     local major
     local minor
     local micro
-    local error_msg="${panel_type} version \"${panel_version}\" is not supported. Please update the control panel to version \"${plesk_min}\"."
+    local error_msg="${panel_type} version \"${panel_version}\" is not supported. Please update the control panel to version \"${plesk_min_major}.${plesk_min_minor}.${plesk_min_micro}\"."
     if [[ "${panel_type}" == 'plesk' ]]; then
 IFS=. read -r major minor micro << EOF
 ${panel_version}
