@@ -546,7 +546,7 @@ reinstall_secure_boot_packages() {
         return 0
     fi
     for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2|kernel'); do
-        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' $pkg)" ]]; then
+        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
             yum reinstall "${pkg}" -y
         fi
     done
