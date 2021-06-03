@@ -168,9 +168,34 @@ assert_supported_system() {
 assert_supported_panel() {
     local -r panel_type="${1}"
     local -r panel_version="${2}"
+    local plesk_min_major=18
+    local plesk_min_minor=0
+    local plesk_min_micro=35
+    local plesk_min=18.0.35
+    local major
+    local minor
+    local micro
+    local error_msg="${panel_type} version \"${panel_version}\" is not supported. Please update the control panel to version \"${plesk_min}\"."
     if [[ "${panel_type}" == 'plesk' ]]; then
-        report_step_error 'Plesk is not supported yet'
-        exit 1
+IFS=. read -r major minor micro << EOF
+${panel_version}
+EOF
+        if [[ -z ${micro} ]]; then
+            micro=0
+        fi
+        if [[ -z ${minor} ]]; then
+            minor=0
+        fi
+        if [[ ${major} -lt ${plesk_min_major} ]]; then
+            report_step_error "${error_msg}"
+            exit 1
+        elif [[ ${major} -eq ${plesk_min_major} && ${minor} -lt ${plesk_min_minor} ]]; then
+            report_step_error "${error_msg}"
+            exit 1
+        elif [[ ${major} -eq ${plesk_min_major} && ${minor} -eq ${plesk_min_minor} && ${micro} -lt ${plesk_min_micro} ]]; then
+            report_step_error "${error_msg}"
+            exit 1
+        fi
     fi
 }
 
