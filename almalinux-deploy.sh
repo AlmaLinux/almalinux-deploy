@@ -318,6 +318,7 @@ assert_valid_package() {
             "${output}"
         exit 1
     fi
+    report_step_done 'Verify almalinux-release package'
 }
 
 # Terminates the program if OS version doesn't match AlmaLinux version.
@@ -342,6 +343,7 @@ assert_compatible_os_version() {
         report_step_error "Version of you OS ${os_version} is not supported yet"
         exit 1
     fi
+    report_step_done 'Your OS is supported'
     save_status_of_stage "assert_compatible_os_version"
 }
 
@@ -602,8 +604,6 @@ main() {
     report_step_done 'Download almalinux-release package'
 
     assert_valid_package "${release_path}"
-    report_step_done 'Verify almalinux-release package'
-
     assert_compatible_os_version "${os_version}" "${release_path}"
 
     case "${os_type}" in
