@@ -418,7 +418,7 @@ install_almalinux_release_package() {
         return 0
     fi
     local -r release_path="${1}"
-    dnf localinstall -y "${release_path}" --disablerepo=*
+    rpm -Uvh "${release_path}"
     report_step_done 'Install almalinux-release package'
     save_status_of_stage "install_almalinux_release_package"
 }
@@ -625,7 +625,6 @@ reinstall_secure_boot_packages() {
 
 
 main() {
-    setup_log_files
     is_migration_completed
     local arch
     local os_version
@@ -702,6 +701,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         esac
     done
+    setup_log_files
     set -x
     main
     set +x
