@@ -8,10 +8,6 @@
 
 set -euo pipefail
 
-exec > >(tee /var/log/almalinux-deploy.log)
-exec 5> /var/log/almalinux-deploy.debug.log
-BASH_XTRACEFD=5
-
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
@@ -33,6 +29,12 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "redhat-release" "redhat-release-eula")
+
+setup_log_files() {
+    exec > >(tee /var/log/almalinux-deploy.log)
+    exec 5> /var/log/almalinux-deploy.debug.log
+    BASH_XTRACEFD=5
+}
 
 
 # Save the successful status of a stage for future continue of it
@@ -623,6 +625,7 @@ reinstall_secure_boot_packages() {
 
 
 main() {
+    setup_log_files
     is_migration_completed
     local arch
     local os_version
