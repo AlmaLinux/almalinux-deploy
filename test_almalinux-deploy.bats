@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-source almalinux-deploy.sh
+source almalinux-deploy.sh -t
 
 
 setup() {

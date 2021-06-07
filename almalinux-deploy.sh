@@ -9,6 +9,8 @@
 set -euo pipefail
 
 exec > >(tee /var/log/almalinux-deploy.log)
+exec 5> >(/var/log/almalinux-deploy.debug.log)
+BASH_XTRACEFD=5
 
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
@@ -18,19 +20,19 @@ STAGE_STATUSES_DIR='/var/run/almalinux-deploy-statuses'
 MINIMAL_SUPPORTED_VERSION='8.3'
 VERSION='0.1.11'
 
-BRANDING_PKGS="centos-backgrounds centos-logos centos-indexhtml \
-                centos-logos-ipa centos-logos-httpd \
-                oracle-backgrounds oracle-logos oracle-indexhtml \
-                oracle-logos-ipa oracle-logos-httpd \
-                oracle-epel-release-el8 \
-                redhat-backgrounds redhat-logos redhat-indexhtml \
-                redhat-logos-ipa redhat-logos-httpd"
+BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
+                "centos-logos-ipa" "centos-logos-httpd" \
+                "oracle-backgrounds" "oracle-logos" "oracle-indexhtml" \
+                "oracle-logos-ipa" "oracle-logos-httpd" \
+                "oracle-epel-release-el8" \
+                "redhat-backgrounds" "redhat-logos" "redhat-indexhtml" \
+                "redhat-logos-ipa" "redhat-logos-httpd")
 
-REMOVE_PKGS="centos-linux-release centos-gpg-keys centos-linux-repos \
-                libreport-plugin-rhtsupport libreport-rhel insights-client \
-                libreport-rhel-anaconda-bugzilla libreport-rhel-bugzilla \
-                oraclelinux-release oraclelinux-release-el8 \
-                redhat-release redhat-release-eula"
+REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
+                "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
+                "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
+                "oraclelinux-release" "oraclelinux-release-el8" \
+                "redhat-release" "redhat-release-eula")
 
 
 # Save the successful status of a stage for future continue of it
@@ -378,41 +380,63 @@ cleanup_tmp_dir() {
     rm -fr "${1:?}"
 }
 
-# Converts a CentOS system to AlmaLinux
-#
-# $1 - almalinux-release RPM package path.
-migrate_from_centos() {
-    if get_status_of_stage "migrate_from_centos"; then
+# Remove OS specific packages
+remove_os_specific_packages_before_migration() {
+    if get_status_of_stage "remove_os_specific_packages_before_migration"; then
         return 0
     fi
-    local -r release_path="${1}"
-    local to_remove=''
-    local alma_pkg=''
-    local output
-    # replace CentOS packages with almalinux-release and remove centos-specific
-    # packages
-    for pkg_name in ${REMOVE_PKGS}; do
-        if rpm -q "${pkg_name}" &>/dev/null; then
-            to_remove="${to_remove} ${pkg_name}"
+    for i in "${!REMOVE_PKGS[@]}"; do
+        if ! rpm -q "${REMOVE_PKGS[i]}" &> /dev/null; then
+            # remove an erased package from the list if it isn't installed
+            unset "REMOVE_PKGS[i]"
         fi
     done
-    if [[ -n "${to_remove}" ]]; then
-        # shellcheck disable=SC2086
-        rpm -e --nodeps --allmatches ${to_remove}
-        for pkg_name in ${to_remove}; do
-            report_step_done "Remove ${pkg_name} package"
-        done
+    if [[ "${#REMOVE_PKGS[@]}" -ne 0 ]]; then
+        rpm -e --nodeps --allmatches "${REMOVE_PKGS[@]}"
+    fi
+    report_step_done 'Remove OS specific rpm packages'
+    save_status_of_stage "remove_os_specific_packages_before_migration"
+}
+
+
+# Remove not needed Red Hat directories
+remove_not_needed_redhat_dirs() {
+    if get_status_of_stage "remove_not_needed_redhat_dirs"; then
+        return 0
     fi
     [ -d /usr/share/doc/redhat-release ] && rm -r /usr/share/doc/redhat-release
     [ -d /usr/share/redhat-release ] && rm -r /usr/share/redhat-release
-    rpm -Uvh "${release_path}"
+    save_status_of_stage "remove_not_needed_redhat_dirs"
+}
+
+
+# Install package almalinux-release
+install_almalinux_release_package() {
+    if get_status_of_stage "install_almalinux_release_package"; then
+        return 0
+    fi
+    local -r release_path="${1}"
+    dnf localinstall -y "${release_path}"
     report_step_done 'Install almalinux-release package'
+    save_status_of_stage "install_almalinux_release_package"
+}
+
+
+# Remove brand packages and install the same AlmaLinux packages
+replace_brand_packages() {
+    if get_status_of_stage "replace_brand_packages"; then
+        return 0
+    fi
+    local alma_pkgs=()
+    local alma_pkg
+    local output
+    local pkg_name
     # replace GUI packages
-    for pkg_name in ${BRANDING_PKGS}; do
+    for i in "${!BRANDING_PKGS[@]}"; do
+        pkg_name="${BRANDING_PKGS[i]}"
         if rpm -q "${pkg_name}" &>/dev/null; then
             # shellcheck disable=SC2001
-            alma_pkg=""
-            case ${pkg_name} in
+            case "${pkg_name}" in
                 oracle-epel-release-el8)
                     alma_pkg="epel-release"
                     ;;
@@ -421,14 +445,39 @@ migrate_from_centos() {
                     alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat#almalinux#')"
                     ;;
             esac
-            rpm -e --nodeps "${pkg_name}"
-            report_step_done "Remove ${pkg_name} package"
-            if ! output=$(dnf install -y "${alma_pkg}" 2>&1); then
-                report_step_error "Install ${alma_pkg} package" "${output}"
-            fi
-            report_step_done "Install ${alma_pkg} package"
+            alma_pkgs+=("${alma_pkg}")
+        else
+            unset "BRANDING_PKGS[i]"
         fi
     done
+    if [[ "${#BRANDING_PKGS[@]}" -ne 0 ]]; then
+        rpm -e --nodeps --allmatches "${BRANDING_PKGS[@]}"
+        report_step_done "Remove" "${BRANDING_PKGS[@]}" "packages"
+    fi
+    if [[ "${#alma_pkgs[@]}" -ne 0 ]]; then
+        if ! output=$(dnf install -y "${alma_pkgs[@]}" 2>&1); then
+            report_step_error "Install" "${alma_pkgs[@]}" "packages" "${output}"
+        fi
+        report_step_done "Install" "${alma_pkgs[@]}" "packages"
+    fi
+    save_status_of_stage "replace_brand_packages"
+}
+
+
+# Converts a CentOS like system to AlmaLinux
+#
+# $1 - almalinux-release RPM package path.
+migrate_from_centos() {
+    if get_status_of_stage "migrate_from_centos"; then
+        return 0
+    fi
+    local -r release_path="${1}"
+    # replace OS packages with almalinux-release
+    # and OS centos-specific packages
+    remove_os_specific_packages_before_migration
+    remove_not_needed_redhat_dirs
+    install_almalinux_release_package "${release_path}"
+    replace_brand_packages
     save_status_of_stage "migrate_from_centos"
 }
 
@@ -641,12 +690,16 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             echo "${VERSION}"
             exit 0
             ;;
+        -t | --tests)
+            exit 0
+            ;;
         *)
             echo "Error: unknown option ${opt}" >&2
             exit 2
             ;;
         esac
     done
-
+    set -x
     main
+    set +x
 fi
