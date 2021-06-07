@@ -9,7 +9,7 @@
 set -euo pipefail
 
 exec > >(tee /var/log/almalinux-deploy.log)
-exec 5> >(/var/log/almalinux-deploy.debug.log)
+exec 5> /var/log/almalinux-deploy.debug.log
 BASH_XTRACEFD=5
 
 BASE_TMP_DIR='/root'
@@ -416,7 +416,7 @@ install_almalinux_release_package() {
         return 0
     fi
     local -r release_path="${1}"
-    dnf localinstall -y "${release_path}"
+    dnf localinstall -y "${release_path}" --disablerepo=*
     report_step_done 'Install almalinux-release package'
     save_status_of_stage "install_almalinux_release_package"
 }
