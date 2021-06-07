@@ -454,13 +454,13 @@ replace_brand_packages() {
     done
     if [[ "${#BRANDING_PKGS[@]}" -ne 0 ]]; then
         rpm -e --nodeps --allmatches "${BRANDING_PKGS[@]}"
-        report_step_done "Remove" "${BRANDING_PKGS[@]}" "packages"
+        report_step_done "Remove ${BRANDING_PKGS[*]} packages"
     fi
     if [[ "${#alma_pkgs[@]}" -ne 0 ]]; then
         if ! output=$(dnf install -y "${alma_pkgs[@]}" 2>&1); then
-            report_step_error "Install" "${alma_pkgs[@]}" "packages" "${output}"
+            report_step_error "Install ${alma_pkgs[*]} packages" "${output}"
         fi
-        report_step_done "Install" "${alma_pkgs[@]}" "packages"
+        report_step_done "Install ${alma_pkgs[*]} packages"
     fi
     save_status_of_stage "replace_brand_packages"
 }
@@ -588,6 +588,9 @@ restore_java_links() {
         fi
     done < "${javaBackup}"
     popd
+    if [[ ! -e /usr/bin/java ]]; then
+        ln -s /etc/alternatives/java /usr/bin/java
+    fi
     save_status_of_stage "restore_java_links"
 }
 
