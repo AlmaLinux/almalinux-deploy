@@ -602,7 +602,13 @@ add_efi_boot_record() {
     if [[ ! -d /sys/firmware/efi ]]; then
         return
     fi
-    efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi"
+    local device
+    local disk_name
+    local disk_num
+    device="$(df -T /boot/efi | sed -n 2p | awk '{ print $1}')"
+    disk_name="$(echo "${device}" | sed -re 's/(p|)[0-9]$//g')"
+    disk_num="$(echo "${device}" | tail -c 2|sed 's|[^0-9]||g')"
+    efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name}" -p "${disk_num}"
     report_step_done "The new EFI boot record for AlmaLinux is added"
     save_status_of_stage "add_efi_boot_record"
 }
