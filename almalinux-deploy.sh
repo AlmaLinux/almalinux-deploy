@@ -557,7 +557,7 @@ that won't boot in Secure Boot mode anymore[0m:\n"
 
 # Backup and restore symbol links from java-openjdk-headless package
 # https://bugzilla.redhat.com/show_bug.cgi?id=1200302
-javaBackup=$(mktemp /tmp/java_backup.XXXXXX)
+javaBackup="/tmp/java_backup"
 
 backup_java_links() {
     if get_status_of_stage "backup_java_links"; then
@@ -567,6 +567,9 @@ backup_java_links() {
     # do nothing if java alternatives don't exist
     if java_alternatives="$(update-alternatives --display java)"; then
         echo "${java_alternatives}" | grep -oP '(?<=slave ).*' | sed -e 's#\(\S*\): \(\S*\)#\2 \1#' > "${javaBackup}"
+        # the symlink to java binary
+        # /etc/alternatives/java -> /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.292.b10-1.el8_4.x86_64/jre/bin/java
+        echo "$(echo "${java_alternatives}" | grep -oP '(?<=points to ).*') java" >> "${javaBackup}"
     fi
     save_status_of_stage "backup_java_links"
 }
@@ -575,22 +578,26 @@ restore_java_links() {
     if get_status_of_stage "restore_java_links"; then
         return 0
     fi
+    local src
+    local dest
     # do nothing if a backup of java alternatives symlinks doesn't exist
     [[ ! -s "${javaBackup}" ]] && return 0
     pushd /etc/alternatives
     while IFS= read -r line; do
-        if [[ -n ${line} ]]; then
-            forig=$(echo "${line}" | cut -f1 -d' ')
-            flink=$(echo "${line}" | cut -f2 -d' ')
-            if [[ ! -e ${flink} ]]; then
-                ln -s "${forig}" "${flink}"
+        if [[ -n "${line}" ]]; then
+            src=$(echo "${line}" | cut -f1 -d' ')
+            dest=$(echo "${line}" | cut -f2 -d' ')
+            # restore a symlink in /etc/alternatives
+            if [[ ! -e "${dest}" ]]; then
+                ln -s "${src}" "${dest}"
+            fi
+            # restore a symlink in /usr/bin for the java binaries
+            if [[ "${src}" == *"jre/bin/${dest}"* && ! -e "/usr/bin/${dest}" ]]; then
+                ln -s "/etc/alternatives/${dest}" "/usr/bin/${dest}"
             fi
         fi
     done < "${javaBackup}"
     popd
-    if [[ ! -e /usr/bin/java ]]; then
-        ln -s /etc/alternatives/java /usr/bin/java
-    fi
     save_status_of_stage "restore_java_links"
 }
 
