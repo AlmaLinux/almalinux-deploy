@@ -12,6 +12,10 @@ BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
 STAGE_STATUSES_DIR='/var/run/almalinux-deploy-statuses'
+ALT_ADM_DIR="/var/lib/alternatives"
+BAK_DIR="/tmp/alternatives_backup"
+ALT_DIR="/etc/alternatives"
+
 # AlmaLinux OS 8.3
 MINIMAL_SUPPORTED_VERSION='8.3'
 VERSION='0.1.11'
@@ -28,7 +32,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
-                "redhat-release" "redhat-release-eula" "kpatch" "kpatch-dnf")
+                "redhat-release" "redhat-release-eula")
 
 setup_log_files() {
     exec > >(tee /var/log/almalinux-deploy.log)
@@ -555,50 +559,156 @@ that won't boot in Secure Boot mode anymore[0m:\n"
     save_status_of_stage "check_custom_kernel"
 }
 
-# Backup and restore symbol links from java-openjdk-headless package
-# https://bugzilla.redhat.com/show_bug.cgi?id=1200302
-javaBackup="/tmp/java_backup"
+_backup_alternative() {
+    local path="${1}"
+    local bak_dir="${2}"
+    local bak_prefix="current_point"
+    local alt_name=
+    local alt_dest=
+    local alt_link=
+    alt_name="$(basename "${path}")"
+    alt_link="${ALT_DIR}/${alt_name}"
+    alt_dest="$(readlink "${alt_link}")"
+    mkdir -p "${bak_dir}"
 
-backup_java_links() {
-    if get_status_of_stage "backup_java_links"; then
-        return 0
-    fi
-    local java_alternatives
-    # do nothing if java alternatives don't exist
-    if java_alternatives="$(update-alternatives --display java)"; then
-        echo "${java_alternatives}" | grep -oP '(?<=slave ).*' | sed -e 's#\(\S*\): \(\S*\)#\2 \1#' > "${javaBackup}"
-        # the symlink to java binary
-        # /etc/alternatives/java -> /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.292.b10-1.el8_4.x86_64/jre/bin/java
-        echo "$(echo "${java_alternatives}" | grep -oP '(?<=points to ).*') java" >> "${javaBackup}"
-    fi
-    save_status_of_stage "backup_java_links"
+    # backup the current state of an alternative
+    echo "${alt_dest} ${alt_link}" > "${bak_dir}/${bak_prefix}.${alt_name}"
 }
 
-restore_java_links() {
-    if get_status_of_stage "restore_java_links"; then
+
+_restore_alternative() {
+    local path="${1}"
+    local bak_dir="${2}"
+    local bak_point="${bak_dir}/current_point"
+    local alt_name=
+    local shift_begin=3
+    local shift_middle=2
+    local main_link=
+    local alternatives=()
+    local priorities=()
+    local links=()
+    local dests=()
+    local names=()
+    local line=
+    local _alt_link=
+    local _alt_dest=
+    local alt_link=
+    local alt_dest=
+    local i=
+    local empty_num=
+    local len=
+    local begin_index=
+    local end_index=
+    len="$(wc -l < "${path}")"
+    # name of a backup alternatives, e.g. python or java
+    alt_name="$(basename "${path}")"
+    # system link which points to an alternative, e.g.
+    # /usr/bin/unversioned-python -> /etc/alternatives/python
+    main_link="$(sed -n -e 2p "${path}")"
+    i=0
+    # this cycle saves info about slave's links
+    # and slave's names of an alternative
+    # e.g.
+    # unversioned-python - name
+    # /usr/bin/python - link
+    # python2 - name
+    # /usr/bin/python2 - link
+    # unversioned-python-man - name
+    # /usr/share/man/man1/python.1.gz - link
+    while read -r line; do
+        i=$(("${i}" + 1))
+        if [[ -z $line ]]; then
+            empty_num=$(("${shift_begin}" + "${i}"))
+            break
+        fi
+        if [[ $(( "${i}" % 2 )) -eq 0 ]]; then
+            links+=("$line")
+        else
+            names+=("$line")
+        fi
+    done < <(tail -n +${shift_begin} "${path}")
+
+    # this cycle saves info about available alternatives and them priorites
+    # e.g.
+    # /usr/libexec/no-python alternative with priority 404
+    # /usr/bin/python3 alternative with priority 300
+    while [[ "${len}" -gt $(("${#names[@]}" + "${empty_num}")) ]]; do
+        alternatives+=("$(sed -n -e "${empty_num}"p "${path}")")
+        priorities+=("$(sed -n -e $(("${empty_num}" + 1))p "${path}")")
+        begin_index="$(("${empty_num}" + "${shift_middle}"))"
+        end_index="$(("${#names[@]}" + "${shift_middle}" + "${empty_num}"))"
+        # this cycle saves info about slave's dests for an each alternative,
+        # e.g.
+        # /usr/bin/python3 - dest for /usr/bin/python
+        #/usr/share/man/man1/python3.1.gz - dest for /usr/share/man/man1/python.1.gz
+        # destination can be empty and in this case we don't create symlink
+        if [[ "${begin_index}" -ne "${end_index}" ]]; then
+            while read -r line; do
+                dests+=("$line")
+            done < <(sed -n -e "${begin_index}","${end_index}"p "${path}")
+        fi
+        empty_num=$(("${empty_num}" + "${#names[@]}" + "${shift_middle}"))
+    done
+    # read and restore current state of an alternative
+    # e.g.
+    # /etc/alternatives/python -> /usr/libexec/no-python
+    while read -r _alt_dest _alt_link; do
+        alt_link="${_alt_link}"
+        alt_dest="${_alt_dest}"
+        if [[ ! -e "${alt_link}" ]]; then
+            ln -sf "${alt_dest}" "${alt_link}"
+        fi
+    done < "${bak_point}.${alt_name}"
+
+    for i in "${!alternatives[@]}"; do
+        if [[ ! -e "${main_link}" ]]; then
+            # restore system symlink for alternative, e.g.
+            # /usr/bin/unversioned-python -> /etc/alternatives/python
+            ln -sf "${alt_link}" "${main_link}"
+        fi
+        for j in "${!names[@]}"; do
+            if [[ "${alt_dest}" == "${alternatives[$i]}" ]]; then
+                if [[ -e "${dests[$(( "${j}" + "${#links[@]}" * "${i}"))]}" && ! -e "${ALT_DIR}/${names[$j]}" ]]; then
+                    # restore system slave link to an alternative,
+                    # e.g. /usr/share/man/man1/python.1.gz -> /etc/alternatives/unversioned-python-man
+                    ln -sf "${dests[$(( "${j}" + "${#links[@]}" * "${i}"))]}" "${ALT_DIR}/${names[$j]}"
+                fi
+                if [[ ! -e "${links[$j]}" ]]; then
+                    # restore slave link for an alternative, e.g.
+                    # /etc/alternatives/unversioned-python-man -> /usr/share/man/man1/unversioned-python.1.gz
+                    ln -sf "${ALT_DIR}/${names[$j]}" "${links[$j]}"
+                fi
+            fi
+        done
+    done
+
+}
+
+# backup existing alternatives, including the current states of alternatives
+backup_alternatives() {
+    if get_status_of_stage "backup_alternatives"; then
         return 0
     fi
-    local src
-    local dest
-    # do nothing if a backup of java alternatives symlinks doesn't exist
-    [[ ! -s "${javaBackup}" ]] && return 0
-    pushd /etc/alternatives
-    while IFS= read -r line; do
-        if [[ -n "${line}" ]]; then
-            src=$(echo "${line}" | cut -f1 -d' ')
-            dest=$(echo "${line}" | cut -f2 -d' ')
-            # restore a symlink in /etc/alternatives
-            if [[ ! -e "${dest}" ]]; then
-                ln -s "${src}" "${dest}"
-            fi
-            # restore a symlink in /usr/bin for the java binaries
-            if [[ "${src}" == *"jre/bin/${dest}"* && ! -e "/usr/bin/${dest}" ]]; then
-                ln -s "/etc/alternatives/${dest}" "/usr/bin/${dest}"
-            fi
-        fi
-    done < "${javaBackup}"
-    popd
-    save_status_of_stage "restore_java_links"
+    for alt_file in "${ALT_ADM_DIR}"/*; do
+        _backup_alternative "${alt_file}" "${BAK_DIR}"
+    done
+    /usr/bin/cp -rf "${ALT_ADM_DIR}" "${BAK_DIR}"/.
+    report_step_done "Backup of alternatives is done"
+    save_status_of_stage "backup_alternatives"
+}
+
+
+# restore existing alternatives, including the current states of alternatives
+restore_alternatives() {
+    if get_status_of_stage "restore_alternatives"; then
+        return 0
+    fi
+    for alt_file in "${BAK_DIR}/alternatives/"*; do
+        _restore_alternative "${alt_file}" "${BAK_DIR}"
+    done
+    /usr/bin/cp -rn "${BAK_DIR}/alternatives/"* "${ALT_ADM_DIR}/"
+    report_step_done "Restoring of alternatives is done"
+    save_status_of_stage "restore_alternatives"
 }
 
 
@@ -684,9 +794,9 @@ main() {
         ;;
     esac
 
-    backup_java_links
+    backup_alternatives
     distro_sync
-    restore_java_links
+    restore_alternatives
     restore_issue
     install_kernel
     grub_update
