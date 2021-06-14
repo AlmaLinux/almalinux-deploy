@@ -673,7 +673,7 @@ _restore_alternative() {
                     # /etc/alternatives/unversioned-python-man -> /usr/share/man/man1/unversioned-python.1.gz
                     ln -sf "${dests[$(( "${j}" + "${#links[@]}" * "${i}"))]}" "${ALT_DIR}/${names[$j]}"
                 fi
-                if [[ ! -e "${ALT_DIR}/${names[$j]}" ]]; then
+                if [[ -e "${ALT_DIR}/${names[$j]}" && ! -e "${links[$j]}" ]]; then
                     # restore slave link for an alternative
                     # e.g. /usr/share/man/man1/python.1.gz -> /etc/alternatives/unversioned-python-man
                     ln -sf "${ALT_DIR}/${names[$j]}" "${links[$j]}"
