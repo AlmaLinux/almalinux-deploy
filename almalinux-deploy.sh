@@ -32,7 +32,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
-                "redhat-release" "redhat-release-eula" "kpatch" "kpatch-dnf")
+                "redhat-release" "redhat-release-eula")
 
 setup_log_files() {
     exec > >(tee /var/log/almalinux-deploy.log)
@@ -669,13 +669,13 @@ _restore_alternative() {
         for j in "${!names[@]}"; do
             if [[ "${alt_dest}" == "${alternatives[$i]}" ]]; then
                 if [[ -e "${dests[$(( "${j}" + "${#links[@]}" * "${i}"))]}" && ! -e "${ALT_DIR}/${names[$j]}" ]]; then
-                    # restore system slave link to an alternative,
-                    # e.g. /usr/share/man/man1/python.1.gz -> /etc/alternatives/unversioned-python-man
+                    # restore system slave link to an alternative, e.g.
+                    # /etc/alternatives/unversioned-python-man -> /usr/share/man/man1/unversioned-python.1.gz
                     ln -sf "${dests[$(( "${j}" + "${#links[@]}" * "${i}"))]}" "${ALT_DIR}/${names[$j]}"
                 fi
-                if [[ ! -e "${links[$j]}" ]]; then
-                    # restore slave link for an alternative, e.g.
-                    # /etc/alternatives/unversioned-python-man -> /usr/share/man/man1/unversioned-python.1.gz
+                if [[ -e "${ALT_DIR}/${names[$j]}" && ! -e "${links[$j]}" ]]; then
+                    # restore slave link for an alternative
+                    # e.g. /usr/share/man/man1/python.1.gz -> /etc/alternatives/unversioned-python-man
                     ln -sf "${ALT_DIR}/${names[$j]}" "${links[$j]}"
                 fi
             fi
