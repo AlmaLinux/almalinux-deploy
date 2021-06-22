@@ -501,6 +501,13 @@ distro_sync() {
         plesk installer --select-release-current --show-components --skip-cleanup
         dnf_repos+=",PLESK_*-dist"
     fi
+    dnf check-update || {
+        ret_code=${?}
+        if [[ ${ret_code} -eq 100 ]]; then
+            report_step_error "${step}. Exit code: ${ret_code}"
+            exit ${ret_code}
+        fi
+    }
     dnf distro-sync -y "${dnf_repos}" || {
         ret_code=${?}
         report_step_error "${step}. Exit code: ${ret_code}"
