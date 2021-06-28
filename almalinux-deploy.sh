@@ -434,8 +434,7 @@ detect_foreman() {
         return 0
     fi
     if [ -x /usr/sbin/subscription-manager ]; then
-        subscription-manager status &>/dev/null
-        if [ $? -eq 0 ]; then
+        if subscription-manager status &>/dev/null; then
             echo "Foreman subscription detected"
             if [ -f "/etc/yum.repos.d/redhat.repo" ]; then
                 if grep -q "^[[:space:]]*enabled[[:space:]]*=[[:space:]]*1" /etc/yum.repos.d/redhat.repo; then
