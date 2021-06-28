@@ -201,7 +201,7 @@ assert_supported_system() {
     local -r os_type="${1}"
     local -r os_version="${2:0:1}"
     local -r arch="${3}"
-    case ${arch} in
+    case "${arch}" in
         x86_64|aarch64)
             ;;
         *)
