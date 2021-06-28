@@ -201,10 +201,14 @@ assert_supported_system() {
     local -r os_type="${1}"
     local -r os_version="${2:0:1}"
     local -r arch="${3}"
-    if [[ ${arch} != 'x86_64' ]]; then
-        report_step_error "Check ${arch} architecture is supported"
-        exit 1
-    fi
+    case "${arch}" in
+        x86_64|aarch64)
+            ;;
+        *)
+            report_step_error "Check ${arch} architecture is supported"
+            exit 1
+            ;;
+    esac
     if [[ ${os_version} -ne ${MINIMAL_SUPPORTED_VERSION:0:1} ]]; then
         report_step_error "Check EL${os_version} is supported"
         exit 1
