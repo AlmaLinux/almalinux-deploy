@@ -28,7 +28,7 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
    
    # check that the system boots AlmaLinux kernel by default
    $ sudo grubby --info DEFAULT | grep AlmaLinux
-   title="AlmaLinux (4.18.0-305.1.el8.x86_64) 8.4"
+   title="AlmaLinux (4.18.0-305.el8.x86_64) 8.4"
    ```
 5. Thank you for choosing AlmaLinux!
 
