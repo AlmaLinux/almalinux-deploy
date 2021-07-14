@@ -18,7 +18,7 @@ ALT_DIR="/etc/alternatives"
 
 # AlmaLinux OS 8.3
 MINIMAL_SUPPORTED_VERSION='8.3'
-VERSION='0.1.11'
+VERSION='0.1.12'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -507,7 +507,7 @@ distro_sync() {
     fi
     dnf check-update || {
         ret_code=${?}
-        if [[ ${ret_code} -eq 100 ]]; then
+        if [[ ${ret_code} -ne 0 ]] && [[ ${ret_code} -ne 100 ]]; then
             report_step_error "${step}. Exit code: ${ret_code}"
             exit ${ret_code}
         fi
