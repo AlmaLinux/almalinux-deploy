@@ -18,7 +18,7 @@ ALT_DIR="/etc/alternatives"
 
 # AlmaLinux OS 8.3
 MINIMAL_SUPPORTED_VERSION='8.3'
-VERSION='0.1.11'
+VERSION='0.1.12'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -504,11 +504,28 @@ distro_sync() {
     fi
     local -r step='Run dnf distro-sync -y'
     local ret_code=0
-    dnf distro-sync -y || {
+    local dnf_repos="--enablerepo=powertools"
+    # create needed repo
+    if [ "${panel_type}" == "plesk" ]; then
+        plesk installer --select-release-current --show-components --skip-cleanup
+        dnf_repos+=",PLESK_*-dist"
+    fi
+    dnf check-update || {
+        ret_code=${?}
+        if [[ ${ret_code} -ne 0 ]] && [[ ${ret_code} -ne 100 ]]; then
+            report_step_error "${step}. Exit code: ${ret_code}"
+            exit ${ret_code}
+        fi
+    }
+    dnf distro-sync -y "${dnf_repos}" || {
         ret_code=${?}
         report_step_error "${step}. Exit code: ${ret_code}"
         exit ${ret_code}
     }
+    # remove unnecessary repo
+    if [ "${panel_type}" == "plesk" ]; then
+        plesk installer --select-release-current --show-components
+    fi
     report_step_done "${step}"
     save_status_of_stage "distro_sync"
 }

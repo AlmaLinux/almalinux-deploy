@@ -23,12 +23,12 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
 4. Ensure that your system was successfully converted:
    ```shell
    # check release file
-   $ cat /etc/redhat-release
-   AlmaLinux release 8.3 (Purple Manul)
-
+   $ cat /etc/redhat-release 
+   AlmaLinux release 8.4 (Electric Cheetah)
+   
    # check that the system boots AlmaLinux kernel by default
    $ sudo grubby --info DEFAULT | grep AlmaLinux
-   title="AlmaLinux (4.18.0-240.el8.x86_64) 8"
+   title="AlmaLinux (4.18.0-305.el8.x86_64) 8.4"
    ```
 5. Thank you for choosing AlmaLinux!
 
