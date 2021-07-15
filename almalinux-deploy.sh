@@ -26,13 +26,17 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "oracle-logos-ipa" "oracle-logos-httpd" \
                 "oracle-epel-release-el8" \
                 "redhat-backgrounds" "redhat-logos" "redhat-indexhtml" \
-                "redhat-logos-ipa" "redhat-logos-httpd")
+                "redhat-logos-ipa" "redhat-logos-httpd" \
+                "rocky-backgrounds" "rocky-logos" "rocky-indexhtml" \
+                "rocky-logos-ipa" "rocky-logos-httpd")
 
 REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
-                "redhat-release" "redhat-release-eula")
+                "redhat-release" "redhat-release-eula" \
+                "rocky-release" "rocky-gpg-keys" "rocky-repos" \
+                "rocky-obsolete-packages")
 
 setup_log_files() {
     exec > >(tee /var/log/almalinux-deploy.log)
@@ -213,8 +217,8 @@ assert_supported_system() {
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
-    if [[ ${os_type} != 'centos' && ${os_type} != 'almalinux' && \
-          ${os_type} != 'ol' && ${os_type} != 'rhel' ]]; then
+    os_types=("centos" "almalinux" "ol" "rhel" "rocky")
+    if [[ ! " ${os_types[*]} " =~ ${os_type} ]]; then
         report_step_error "Check ${os_type} operating system is supported"
         exit 1
     fi
@@ -452,7 +456,7 @@ replace_brand_packages() {
                     ;;
                 *)
                     # shellcheck disable=SC2001
-                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat#almalinux#')"
+                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat\|rocky#almalinux#')"
                     ;;
             esac
             alma_pkgs+=("${alma_pkg}")
@@ -805,7 +809,7 @@ main() {
     assert_compatible_os_version "${os_version}" "${release_path}"
 
     case "${os_type}" in
-    almalinux|centos|ol|rhel)
+    almalinux|centos|ol|rhel|rocky)
         backup_issue
         migrate_from_centos "${release_path}"
         ;;
