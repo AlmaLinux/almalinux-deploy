@@ -218,7 +218,7 @@ assert_supported_system() {
         exit 1
     fi
     os_types=("centos" "almalinux" "ol" "rhel" "rocky")
-    if [[ ! " ${os_types[@]} " =~ " ${os_type} " ]]; then
+    if [[ ! " ${os_types[*]} " =~ ${os_type} ]]; then
         report_step_error "Check ${os_type} operating system is supported"
         exit 1
     fi
