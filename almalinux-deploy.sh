@@ -38,6 +38,8 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
                 "rocky-obsolete-packages")
 
+is_container=0
+
 setup_log_files() {
     exec > >(tee /var/log/almalinux-deploy.log)
     exec 5> /var/log/almalinux-deploy.debug.log
@@ -504,6 +506,7 @@ distro_sync() {
     local -r step='Run dnf distro-sync -y'
     local ret_code=0
     local dnf_repos="--enablerepo=powertools"
+    local exclude_pkgs="--exclude="
     # create needed repo
     if [ "${panel_type}" == "plesk" ]; then
         plesk installer --select-release-current --show-components --skip-cleanup
@@ -516,7 +519,11 @@ distro_sync() {
             exit ${ret_code}
         fi
     }
-    dnf distro-sync -y "${dnf_repos}" || {
+    # check if we inside lxc container
+    if [ $is_container -eq 1 ]; then
+        exclude_pkgs+="filesystem*,grub*"
+    fi
+    dnf distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
         ret_code=${?}
         report_step_error "${step}. Exit code: ${ret_code}"
         exit ${ret_code}
@@ -805,6 +812,10 @@ main() {
     release_path=$(download_release_file "${release_url}" "${tmp_dir}")
     report_step_done 'Download almalinux-release package'
 
+    if mount | grep -q fuse.lxcfs || env | grep -q 'container=lxc'; then
+        is_container=1
+    fi
+
     assert_valid_package "${release_path}"
     assert_compatible_os_version "${os_version}" "${release_path}"
 
@@ -823,10 +834,13 @@ main() {
     distro_sync
     restore_alternatives
     restore_issue
-    install_kernel
-    grub_update
-    reinstall_secure_boot_packages
-    add_efi_boot_record
+    # don't do this steps if we inside the lxc container
+    if [ $is_container -eq 0 ]; then
+        install_kernel
+        grub_update
+        reinstall_secure_boot_packages
+        add_efi_boot_record
+    fi
     check_custom_kernel
     save_status_of_stage "completed"
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
