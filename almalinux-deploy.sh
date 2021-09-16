@@ -39,7 +39,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "rocky-obsolete-packages")
 
 module_list_enabled=""
-module_list_insalled=""
+module_list_installed=""
 is_container=0
 
 setup_log_files() {
@@ -502,7 +502,7 @@ migrate_from_centos() {
 # Reset modules stream ol8 for OracleLinux
 reset_wrong_module_streams() {
     module_list_enabled=$(dnf -e 1 module list --enabled | awk '$2 == "ol8" {printf $1" "}')
-    module_list_insalled=$(dnf -e 1 module list --installed | awk '$2 == "ol8" {printf $1" "}')
+    module_list_installed=$(dnf -e 1 module list --installed | awk '$2 == "ol8" {printf $1" "}')
     if [ -n "${module_list_enabled}" ]; then
         # shellcheck disable=SC2086
         dnf module reset -y ${module_list_enabled}
@@ -560,9 +560,9 @@ restore_module_streams() {
         echo "re-enabled modules: ${module_enabled_rhel}"
         report_step_done "Enable modules"
     fi
-    if [ -n "${module_list_insalled}" ]; then
+    if [ -n "${module_list_installed}" ]; then
         # shellcheck disable=SC2001,2086
-        module_installed_rhel=$(echo ${module_list_insalled} | sed -e 's# #:rhel8 #g')
+        module_installed_rhel=$(echo ${module_list_installed} | sed -e 's# #:rhel8 #g')
         # shellcheck disable=SC2086
         dnf module install -y ${module_installed_rhel}
         echo "installed modules: ${module_installed_rhel}"
