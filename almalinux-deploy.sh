@@ -36,7 +36,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "redhat-release" "redhat-release-eula" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
-                "rocky-obsolete-packages")
+                "rocky-obsolete-packages" "libblockdev-btrfs")
 
 is_container=0
 
