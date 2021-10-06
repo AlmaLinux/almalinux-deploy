@@ -271,6 +271,19 @@ EOF
     save_status_of_stage "assert_supported_panel"
 }
 
+assert_supported_filesystem() {
+    if get_status_of_stage "assert_supported_panel"; then
+        return 0
+    fi
+
+    df -Th | grep btrfs &>/dev/null
+    if [ $? -eq 0 ]; then
+        report_step_error "BTRFS is not supported filesystem"
+        exit 1
+    fi
+    save_status_of_stage "assert_supported_filesystem"
+}
+
 # Returns a latest almalinux-release RPM package download URL.
 #
 # $1 - AlmaLinux major version (e.g. 8).
@@ -799,6 +812,7 @@ main() {
     #os_version="$(get_os_release_var 'VERSION_ID')"
     #os_version="${os_version:0:1}"
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
+    assert_supported_filesystem
 
     read -r panel_type panel_version < <(get_panel_info)
     assert_supported_panel "${panel_type}" "${panel_version}"
