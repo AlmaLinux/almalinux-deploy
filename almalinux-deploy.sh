@@ -276,9 +276,7 @@ assert_supported_filesystem() {
         return 0
     fi
 
-    local result=$(df -Th | grep "btrfs" | awk 'NR == 1{print $2}')
-
-    if [[ "$result" == "btrfs" ]]; then
+    if result=$(df -Th | grep "btrfs" | awk 'NR == 1{print $2}'); then
         report_step_error "BTRFS is not supported filesystem"
         exit 1
     fi
