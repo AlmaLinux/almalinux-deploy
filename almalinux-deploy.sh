@@ -272,12 +272,13 @@ EOF
 }
 
 assert_supported_filesystem() {
-    if get_status_of_stage "assert_supported_panel"; then
+    if get_status_of_stage "assert_supported_filesystem"; then
         return 0
     fi
 
-    df -Th | grep btrfs &>/dev/null
-    if [ $? -eq 0 ]; then
+    local result=$(df -Th | grep "btrfs" | awk 'NR == 1{print $2}')
+
+    if [[ "$result" == "btrfs" ]]; then
         report_step_error "BTRFS is not supported filesystem"
         exit 1
     fi
