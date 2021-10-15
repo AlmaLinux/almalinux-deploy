@@ -110,7 +110,7 @@ teardown() {
 }
 
 @test 'assert_supported_system fails on unsupported architectures' {
-    for arch in 'i686' 'aarch64' 'armv7l'; do
+    for arch in 'i686' 'ppc64le' 'armv7l'; do
         run assert_supported_system 'centos' '8' "${arch}"
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]
@@ -126,7 +126,7 @@ teardown() {
 }
 
 @test 'assert_supported_system fails on unsupported distributions' {
-    for os_id in 'fedora' 'rocky' 'virtuozzo'; do
+    for os_id in 'fedora' 'virtuozzo'; do
         run assert_supported_system "${os_id}" '8' 'x86_64'
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]

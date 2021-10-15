@@ -18,7 +18,7 @@ ALT_DIR="/etc/alternatives"
 
 # AlmaLinux OS 8.3
 MINIMAL_SUPPORTED_VERSION='8.3'
-VERSION='0.1.11'
+VERSION='0.1.12'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -26,13 +26,19 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "oracle-logos-ipa" "oracle-logos-httpd" \
                 "oracle-epel-release-el8" \
                 "redhat-backgrounds" "redhat-logos" "redhat-indexhtml" \
-                "redhat-logos-ipa" "redhat-logos-httpd")
+                "redhat-logos-ipa" "redhat-logos-httpd" \
+                "rocky-backgrounds" "rocky-logos" "rocky-indexhtml" \
+                "rocky-logos-ipa" "rocky-logos-httpd")
 
 REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
-                "redhat-release" "redhat-release-eula")
+                "redhat-release" "redhat-release-eula" \
+                "rocky-release" "rocky-gpg-keys" "rocky-repos" \
+                "rocky-obsolete-packages")
+
+is_container=0
 
 setup_log_files() {
     exec > >(tee /var/log/almalinux-deploy.log)
@@ -201,16 +207,20 @@ assert_supported_system() {
     local -r os_type="${1}"
     local -r os_version="${2:0:1}"
     local -r arch="${3}"
-    if [[ ${arch} != 'x86_64' ]]; then
-        report_step_error "Check ${arch} architecture is supported"
-        exit 1
-    fi
+    case "${arch}" in
+        x86_64|aarch64)
+            ;;
+        *)
+            report_step_error "Check ${arch} architecture is supported"
+            exit 1
+            ;;
+    esac
     if [[ ${os_version} -ne ${MINIMAL_SUPPORTED_VERSION:0:1} ]]; then
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
-    if [[ ${os_type} != 'centos' && ${os_type} != 'almalinux' && \
-          ${os_type} != 'ol' && ${os_type} != 'rhel' ]]; then
+    os_types=("centos" "almalinux" "ol" "rhel" "rocky")
+    if [[ ! " ${os_types[*]} " =~ ${os_type} ]]; then
         report_step_error "Check ${os_type} operating system is supported"
         exit 1
     fi
@@ -474,7 +484,7 @@ replace_brand_packages() {
                     ;;
                 *)
                     # shellcheck disable=SC2001
-                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat#almalinux#')"
+                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat\|rocky#almalinux#')"
                     ;;
             esac
             alma_pkgs+=("${alma_pkg}")
@@ -522,11 +532,33 @@ distro_sync() {
     fi
     local -r step='Run dnf distro-sync -y'
     local ret_code=0
-    dnf distro-sync -y || {
+    local dnf_repos="--enablerepo=powertools"
+    local exclude_pkgs="--exclude="
+    # create needed repo
+    if [ "${panel_type}" == "plesk" ]; then
+        plesk installer --select-release-current --show-components --skip-cleanup
+        dnf_repos+=",PLESK_*-dist"
+    fi
+    dnf check-update || {
+        ret_code=${?}
+        if [[ ${ret_code} -ne 0 ]] && [[ ${ret_code} -ne 100 ]]; then
+            report_step_error "${step}. Exit code: ${ret_code}"
+            exit ${ret_code}
+        fi
+    }
+    # check if we inside lxc container
+    if [ $is_container -eq 1 ]; then
+        exclude_pkgs+="filesystem*,grub*"
+    fi
+    dnf distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
         ret_code=${?}
         report_step_error "${step}. Exit code: ${ret_code}"
         exit ${ret_code}
     }
+    # remove unnecessary repo
+    if [ "${panel_type}" == "plesk" ]; then
+        plesk installer --select-release-current --show-components
+    fi
     report_step_done "${step}"
     save_status_of_stage "distro_sync"
 }
@@ -807,11 +839,15 @@ main() {
     release_path=$(download_release_file "${release_url}" "${tmp_dir}")
     report_step_done 'Download almalinux-release package'
 
+    if mount | grep -q fuse.lxcfs || env | grep -q 'container=lxc'; then
+        is_container=1
+    fi
+
     assert_valid_package "${release_path}"
     assert_compatible_os_version "${os_version}" "${release_path}"
 
     case "${os_type}" in
-    almalinux|centos|ol|rhel)
+    almalinux|centos|ol|rhel|rocky)
         backup_issue
         migrate_from_centos "${release_path}"
         ;;
@@ -825,10 +861,13 @@ main() {
     distro_sync
     restore_alternatives
     restore_issue
-    install_kernel
-    grub_update
-    reinstall_secure_boot_packages
-    add_efi_boot_record
+    # don't do this steps if we inside the lxc container
+    if [ $is_container -eq 0 ]; then
+        install_kernel
+        grub_update
+        reinstall_secure_boot_packages
+        add_efi_boot_record
+    fi
     check_custom_kernel
     save_status_of_stage "completed"
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
