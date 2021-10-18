@@ -766,8 +766,8 @@ add_efi_boot_record() {
         echo "ESP Partition on software raid detected:"
         soft_dev1="$(lsblk -f -l -p | grep boot_efi |sed -n 1p | awk '{ print $1}')"
         soft_dev2="$(lsblk -f -l -p | grep boot_efi |sed -n 2p | awk '{ print $1}')"
-        echo $soft_dev1
-        echo $soft_dev2
+        echo "$soft_dev1"
+        echo "$soft_dev2"
         disk_name1="$(echo "${soft_dev1}" | sed -re 's/(p|)[0-9]$//g')"
         disk_name2="$(echo "${soft_dev2}" | sed -re 's/(p|)[0-9]$//g')"
         disk_num1="$(echo "${soft_dev1}" | tail -c 2|sed 's|[^0-9]||g')"
