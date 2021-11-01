@@ -812,7 +812,7 @@ main() {
     release_path=$(download_release_file "${release_url}" "${tmp_dir}")
     report_step_done 'Download almalinux-release package'
 
-    if mount | grep -q fuse.lxcfs || env | grep -q 'container=lxc'; then
+    if systemd-detect-virt --container --quiet; then
         is_container=1
     fi
 
