@@ -774,15 +774,13 @@ add_efi_boot_record() {
         disk_num2="$(echo "${soft_dev2}" | tail -c 2|sed 's|[^0-9]||g')"
         efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name1}" -p "${disk_num1}"
         efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name2}" -p "${disk_num2}"
-        report_step_done "The new EFI boot record for AlmaLinux is added"
-        save_status_of_stage "add_efi_boot_record"
     else
         disk_name="$(echo "${device}" | sed -re 's/(p|)[0-9]$//g')"
         disk_num="$(echo "${device}" | tail -c 2|sed 's|[^0-9]||g')"
         efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name}" -p "${disk_num}"
+    fi
         report_step_done "The new EFI boot record for AlmaLinux is added"
         save_status_of_stage "add_efi_boot_record"
-    fi
 }
 
 
