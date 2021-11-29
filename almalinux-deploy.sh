@@ -36,7 +36,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "redhat-release" "redhat-release-eula" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
-                "rocky-obsolete-packages")
+                "rocky-obsolete-packages" "libblockdev-btrfs")
 
 module_list_enabled=""
 module_list_installed=""
@@ -271,6 +271,18 @@ EOF
         fi
     fi
     save_status_of_stage "assert_supported_panel"
+}
+
+assert_supported_filesystem() {
+    if get_status_of_stage "assert_supported_filesystem"; then
+        return 0
+    fi
+    local result
+    if result=$(df -Th | awk '{print $2}' | grep btrfs); then
+        report_step_error "${result} is not supported filesystem"
+        exit 1
+    fi
+    save_status_of_stage "assert_supported_filesystem"
 }
 
 # Returns a latest almalinux-release RPM package download URL.
@@ -833,6 +845,7 @@ main() {
     #os_version="$(get_os_release_var 'VERSION_ID')"
     #os_version="${os_version:0:1}"
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
+    assert_supported_filesystem
 
     read -r panel_type panel_version < <(get_panel_info)
     assert_supported_panel "${panel_type}" "${panel_version}"
