@@ -814,7 +814,7 @@ main() {
     if mount | grep -q fuse.lxcfs ||
         env | grep -q 'container=lxc' ||
         awk '{print $1}' /proc/vz/veinfo 2>/dev/null ||
-        grep '/proc/1/cgroup' docker >/dev/null; then
+        grep docker '/proc/1/cgroup' >/dev/null; then
         is_container=1
     fi
 
