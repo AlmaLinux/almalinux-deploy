@@ -772,12 +772,25 @@ add_efi_boot_record() {
         disk_name2="$(echo "${soft_dev2}" | sed -re 's/(p|)[0-9]$//g')"
         disk_num1="$(echo "${soft_dev1}" | tail -c 2|sed 's|[^0-9]||g')"
         disk_num2="$(echo "${soft_dev2}" | tail -c 2|sed 's|[^0-9]||g')"
-        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name1}" -p "${disk_num1}"
-        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name2}" -p "${disk_num2}"
     else
         disk_name="$(echo "${device}" | sed -re 's/(p|)[0-9]$//g')"
         disk_num="$(echo "${device}" | tail -c 2|sed 's|[^0-9]||g')"
+    fi
+        
+    if [[ ${arch} == "x86_64" && $device == *"/dev/md"* ]]; then
+        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name1}" -p "${disk_num1}"
+        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name2}" -p "${disk_num2}"
+        
+    elif [[ ${arch} == "aarch64" && $device == *"/dev/md"* ]]; then
+    	  efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\grubaa64.efi" -d "${disk_name1}" -p "${disk_num1}"
+        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\grubaa64.efi" -d "${disk_name2}" -p "${disk_num2}"
+        
+    elif [[ ${arch} == "x86_64" ]]; then
         efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name}" -p "${disk_num}"
+
+    elif [[ ${arch} == "aarch64" ]]; then
+        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\grubaa64.efi" -d "${disk_name}" -p "${disk_num}"
+   
     fi
         report_step_done "The new EFI boot record for AlmaLinux is added"
         save_status_of_stage "add_efi_boot_record"
