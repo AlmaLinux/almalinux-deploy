@@ -760,6 +760,8 @@ add_efi_boot_record() {
     local disk_name2
     local disk_num1
     local disk_num2
+    local arch
+    arch="$(get_system_arch)"
     device="$(df -T /boot/efi | sed -n 2p | awk '{ print $1}')"
 
     if [[ $device == *"/dev/md"* ]]; then
@@ -782,14 +784,14 @@ add_efi_boot_record() {
         efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name2}" -p "${disk_num2}"
         
     elif [[ ${arch} == "aarch64" && $device == *"/dev/md"* ]]; then
-    	  efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\grubaa64.efi" -d "${disk_name1}" -p "${disk_num1}"
-        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\grubaa64.efi" -d "${disk_name2}" -p "${disk_num2}"
+    	  efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimaa64.efi" -d "${disk_name1}" -p "${disk_num1}"
+        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimaa64.efi" -d "${disk_name2}" -p "${disk_num2}"
         
     elif [[ ${arch} == "x86_64" ]]; then
         efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimx64.efi" -d "${disk_name}" -p "${disk_num}"
 
     elif [[ ${arch} == "aarch64" ]]; then
-        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\grubaa64.efi" -d "${disk_name}" -p "${disk_num}"
+        efibootmgr -c -L "AlmaLinux" -l "\EFI\almalinux\shimaa64.efi" -d "${disk_name}" -p "${disk_num}"
    
     fi
         report_step_done "The new EFI boot record for AlmaLinux is added"
