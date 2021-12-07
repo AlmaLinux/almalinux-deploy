@@ -858,8 +858,10 @@ main() {
 
     release_path=$(download_release_file "${release_url}" "${tmp_dir}")
     report_step_done 'Download almalinux-release package'
-
-    if mount | grep -q fuse.lxcfs || env | grep -q 'container=lxc'; then
+    if mount | grep -q fuse.lxcfs ||
+        env | grep -q 'container=lxc' ||
+        awk '{print $1}' /proc/vz/veinfo 2>/dev/null ||
+        grep docker '/proc/1/cgroup' >/dev/null; then
         is_container=1
     fi
 
