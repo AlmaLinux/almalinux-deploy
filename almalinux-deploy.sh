@@ -17,7 +17,7 @@ BAK_DIR="/tmp/alternatives_backup"
 ALT_DIR="/etc/alternatives"
 
 # AlmaLinux OS 8.5
-MINIMAL_SUPPORTED_VERSION='8.5'
+MINIMAL_SUPPORTED_VERSION='8.3'
 VERSION='0.1.12'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
