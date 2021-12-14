@@ -7,20 +7,39 @@ An EL to AlmaLinux migration tool.
 
 In order to convert your EL8 operating system to AlmaLinux do the following:
 
-1. Make a backup of the system. We didn't test all possible scenarios so there
+1. 1. As OS version 8.5 is required for migration, install the latest updates. It's also recommended to reboot after the update to boot with the latest kernel.
+
+    ```
+    sudo dnf update -y
+    sudo reboot
+    ```
+
+2. Back up of the system. We didn't test all possible scenarios so there
    is a risk that something goes wrong. In such a situation you will have a
    restore point.
-2. Download the [almalinux-deploy.sh](almalinux-deploy.sh) script:
+
+3. Download the [almalinux-deploy.sh](almalinux-deploy.sh) script:
+
    ```shell
    $ curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
    ```
-3. Run the script and check its output for errors:
+
+4. Run the script and check its output for errors:
+
    ```shell
    $ sudo bash almalinux-deploy.sh
      ...
      Migration to AlmaLinux is completed
    ```
-4. Ensure that your system was successfully converted:
+
+5. Reboot is recommended to boot with AlmaLinux kernel:
+
+    ```
+    sudo reboot
+    ```
+  
+6. Ensure that your system was successfully converted:
+
    ```shell
    # check release file
    $ cat /etc/redhat-release
@@ -30,7 +49,8 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
    $ sudo grubby --info DEFAULT | grep AlmaLinux
    title="AlmaLinux (4.18.0-348.el8.x86_64) 8.5 (Arctic Sphynx)"
    ```
-5. Thank you for choosing AlmaLinux!
+
+7. Thank you for choosing AlmaLinux!
 
 
 ## Roadmap
