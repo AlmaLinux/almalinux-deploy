@@ -7,7 +7,7 @@ An EL to AlmaLinux migration tool.
 
 In order to convert your EL8 operating system to AlmaLinux do the following:
 
-1. 1. As OS version 8.5 is required for migration, install the latest updates. It's also recommended to reboot after the update to boot with the latest kernel.
+1. As OS version 8.5 is required for migration, install the latest updates. It's also recommended to reboot after the update to boot with the latest kernel.
 
     ```
     sudo dnf update -y
