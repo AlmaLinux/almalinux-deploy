@@ -823,7 +823,7 @@ reinstall_secure_boot_packages() {
     if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
         yum reinstall "${kernel_package}" -y
     fi
-    report_step_done "All Secure Boot related packages which were released by not AlmaLinux are reinstalled"
+    report_step_done "All Secure Boot related packages which were not released by AlmaLinux are reinstalled"
     save_status_of_stage "reinstall_secure_boot_packages"
 }
 
