@@ -42,7 +42,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 4. Run the script and check its output for errors:
 
    ```shell
-   $ sudo bash almalinux-deploy.sh -f
+   $ sudo bash almalinux-deploy.sh
      ...
      Migration to AlmaLinux is completed
    ```
