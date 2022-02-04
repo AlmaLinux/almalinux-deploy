@@ -54,7 +54,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
     ```
     sudo reboot
     ```
-  
+
 6. Ensure that your system was successfully converted:
 
    ```shell
