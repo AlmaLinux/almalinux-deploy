@@ -2,7 +2,6 @@
 
 An EL to AlmaLinux migration tool.
 
-
 ## Usage
 
 In order to convert your EL8 operating system to AlmaLinux do the following:
@@ -11,7 +10,7 @@ In order to convert your EL8 operating system to AlmaLinux do the following:
 AlmaLinux but not required if you are on at least CentOS 8.4.  Rebooting after the updates is recommended if your system
 received new updates.
 
-    ```
+    ```shell
     sudo dnf update -y
     sudo reboot
     ```
@@ -38,7 +37,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 3. Download the [almalinux-deploy.sh](almalinux-deploy.sh) script:
 
    ```shell
-   $ curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
+   curl -O https://raw.githubusercontent.com/AlmaLinux/almalinux-deploy/master/almalinux-deploy.sh
    ```
 
 4. Run the script and check its output for errors:
@@ -51,7 +50,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 
 5. Reboot is recommended to boot with AlmaLinux kernel:
 
-    ```
+    ```shell
     sudo reboot
     ```
 
@@ -69,7 +68,6 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 
 7. Thank you for choosing AlmaLinux!
 
-
 ## Roadmap
 
 * [x] CentOS 8 support.
@@ -82,7 +80,6 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 * [x] Plesk control panel support.
 * [ ] Cover all common scenarios with tests.
 * [ ] Add OpenNebula support to Molecule test suite.
-
 
 ## Get Involved
 
@@ -109,7 +106,6 @@ To run the functional tests do the following:
 1. Install Vagrant and VirtualBox.
 2. Install requirements from the requirements.txt file.
 3. Run `molecule test --all` in the project root.
-
 
 ## License
 
