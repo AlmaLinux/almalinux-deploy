@@ -1,4 +1,4 @@
-def erecipients = "devel@euro-linux.com"
+def erecipients = "TO_BE_FILLED"
 def ebody = """
 ${currentBuild.fullDisplayName} / ${currentBuild.number}
 Check url: ${currentBuild.absoluteUrl}.
