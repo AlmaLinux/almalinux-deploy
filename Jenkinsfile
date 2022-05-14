@@ -22,7 +22,7 @@ pipeline {
                               stage("$vagrant_machine") {
                                   sleep(5 * Math.random())
                                   sh("vagrant up $vagrant_machine")
-                                  sh("vagrant ssh $vagrant_machine -c \"sudo /home/vagrant/almalinux-deploy/almalinux-deploy.sh -f -v -w && sudo poweroff\" || true")
+                                  sh("vagrant ssh $vagrant_machine -c \"sudo /home/vagrant/almalinux-deploy/almalinux-deploy.sh && sudo poweroff\" || true")
                                   sleep(5 * Math.random())
                                   sh("vagrant up $vagrant_machine")
                                   sleep(120)
@@ -42,7 +42,7 @@ pipeline {
                               stage("$vagrant_machine") {
                                   sleep(5 * Math.random())
                                   sh("vagrant up $vagrant_machine")
-                                  sh("vagrant ssh $vagrant_machine -c \"sudo /home/vagrant/almalinux-deploy/almalinux-deploy.sh -f -v -w && sudo poweroff\" || true")
+                                  sh("vagrant ssh $vagrant_machine -c \"sudo /home/vagrant/almalinux-deploy/almalinux-deploy.sh && sudo poweroff\" || true")
                                   sleep(5 * Math.random())
                                   sh("vagrant up $vagrant_machine")
                                   sleep(120)
