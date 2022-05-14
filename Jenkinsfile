@@ -13,8 +13,6 @@ pipeline {
           label 'libvirt'
         }
     }
-    environment {
-    }
     stages {
 	stage("Migrate supported systems to AlmaLinux 8"){
             steps{
