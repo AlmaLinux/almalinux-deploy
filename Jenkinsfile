@@ -36,7 +36,7 @@ pipeline {
                 }
             }
         }
-	stage("Migrate supported systems to AlmaLinux 8"){
+	stage("Migrate legacy systems to AlmaLinux 8"){
             steps{
                 catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
                   script{
