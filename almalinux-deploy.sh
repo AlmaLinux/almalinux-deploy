@@ -31,6 +31,7 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "rocky-logos-ipa" "rocky-logos-httpd")
 
 REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
+                "centos-stream-release" "centos-stream-repos" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
@@ -172,9 +173,13 @@ get_os_version() {
     local -r os_type="${1}"
     local os_version
     if [[ "${os_type}" == 'centos' ]]; then
-        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
-                                    "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
-            report_step_error "Detect ${os_type} version"
+        if [[ "$(get_os_release_var 'NAME')"  == 'CentOS Stream' ]]; then
+	    os_version="$(get_os_release_var 'VERSION_ID')"
+        else
+	    if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
+		    "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
+	        report_step_error "Detect ${os_type} version"
+	    fi
         fi
     else
         os_version="$(get_os_release_var 'VERSION_ID')"
@@ -359,15 +364,17 @@ assert_valid_package() {
 #
 dnf_upgrade() {
     local -r step='Fix DNF repositories to live mirror and run dnf upgrade -y'
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[baseos\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/BaseOS/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[appstream\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/AppStream/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-AppStream.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[cr\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/ContinuousRelease/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-ContinuousRelease.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[devel\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/Devel/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Devel.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[extras\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/extras/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Extras.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[fasttrack\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/fasttrack/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-FastTrack.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[ha\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/HighAvailability/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-HighAvailability.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[plus\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/centosplus/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Plus.repo
-    sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[powertools\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/PowerTools/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
+    if [[ "$(get_os_release_var 'NAME')" != 'CentOS Stream' ]]; then
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[baseos\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/BaseOS/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[appstream\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/AppStream/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-AppStream.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[cr\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/ContinuousRelease/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-ContinuousRelease.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[devel\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/Devel/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Devel.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[extras\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/extras/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Extras.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[fasttrack\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/fasttrack/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-FastTrack.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[ha\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/HighAvailability/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-HighAvailability.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[plus\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/centosplus/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Plus.repo
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[powertools\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/PowerTools/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
+    fi
     dnf upgrade -y || {
         ret_code=${?}
         if [[ ${ret_code} -ne 0 ]]; then
@@ -393,10 +400,12 @@ assert_compatible_os_version() {
     local alma_version
     alma_version=$(rpm -qp --queryformat '%{version}' "${release_path}")
 
-    if [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
-        report_step_error "Please upgrade your OS from ${os_version} to" \
-        "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
-        exit 1
+    if [[ "$(get_os_release_var 'NAME')" != 'CentOS Stream' ]]; then
+	if [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
+	    report_step_error "Please upgrade your OS from ${os_version} to" \
+	    "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
+	    exit 1
+        fi
     fi
     if [[ "${os_version:2:3}" -gt "${alma_version:2:3}" ]]; then
         report_step_error "Version of you OS ${os_version} is not supported yet"
