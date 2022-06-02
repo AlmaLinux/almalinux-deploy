@@ -18,7 +18,8 @@ ALT_DIR="/etc/alternatives"
 
 # AlmaLinux OS 8.5
 MINIMAL_SUPPORTED_VERSION='8.4'
-VERSION='0.1.12'
+VERSION='0.1.13'
+DOWNGRADE='NO'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -121,6 +122,7 @@ show_usage() {
     echo -e 'Usage: almalinux-deploy.sh [OPTION]...\n'
     echo '  -h, --help           show this message and exit'
     echo '  -f, --full           perform yum upgrade to 8.5 if necessary'
+    echo '  -d, --downgrade      option to allow downgrade from CentOS Stream'
     echo '  -v, --version        print version information and exit'
 }
 
@@ -174,12 +176,16 @@ get_os_version() {
     local os_version
     if [[ "${os_type}" == 'centos' ]]; then
         if [[ "$(get_os_release_var 'NAME')"  == 'CentOS Stream' ]]; then
-	    os_version="$(get_os_release_var 'VERSION_ID')"
+            if [[ ! "${DOWNGRADE}" == 'YES' ]]; then
+                report_step_error "Use '-d or --downgrade' option to allow downgrade from CentOS Stream"
+                exit 1
+            fi
+	        os_version="$(get_os_release_var 'VERSION_ID')"
         else
-	    if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
-		    "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
-	        report_step_error "Detect ${os_type} version"
-	    fi
+	        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
+		        "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
+	            report_step_error "Detect ${os_type} version"
+	        fi
         fi
     else
         os_version="$(get_os_release_var 'VERSION_ID')"
@@ -982,6 +988,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         -v | --version)
             echo "${VERSION}"
             exit 0
+            ;;
+        -d | --downgrade)
+            DOWNGRADE='YES'
             ;;
         -t | --tests)
             exit 0

@@ -78,6 +78,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 * [x] DirectAdmin control panel support.
 * [x] cPanel control panel support.
 * [x] Plesk control panel support.
+* [x] CentOS Stream 8 downgrade support with `-d` option.
 * [ ] Cover all common scenarios with tests.
 * [ ] Add OpenNebula support to Molecule test suite.
 
