@@ -75,6 +75,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 * [x] Oracle Linux 8 support.
 * [x] RHEL 8 support.
 * [x] Rocky Linux 8 support.
+* [x] Virtuozzo Linux (VZLinux) 8 support.
 * [x] DirectAdmin control panel support.
 * [x] cPanel control panel support.
 * [x] Plesk control panel support.
