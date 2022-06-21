@@ -236,7 +236,7 @@ assert_supported_system() {
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
-    os_types=("centos" "almalinux" "ol" "rhel" "rocky" "vzlinux")
+    os_types=("centos" "almalinux" "ol" "rhel" "rocky" "virtuozzo")
     if [[ ! " ${os_types[*]} " =~ ${os_type} ]]; then
         report_step_error "Check ${os_type} operating system is supported"
         exit 1
@@ -950,7 +950,7 @@ main() {
     assert_compatible_os_version "${os_version}" "${release_path}"
 
     case "${os_type}" in
-    almalinux|centos|ol|rhel|rocky|vzlinux)
+    almalinux|centos|ol|rhel|rocky|virtuozzo)
         backup_issue
         migrate_from_centos "${release_path}"
         ;;
