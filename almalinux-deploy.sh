@@ -366,20 +366,42 @@ assert_valid_package() {
 }
 
 #
+# Change repo file to point to last CentOS 8 release in vault
+#
+# $1 - Repo id.
+# $2 - Repo name.
+# $3 - Repo name for earlier releases if different from name.
+# $4 - Repo subdir if different from name.
+fix_repo_file() {
+    local -r repo_id="${1}"
+    local -r repo_name="${2}"
+    local -r repo_name_alt="${3-$2}"
+    local -r repo_subdir="${4:-$2}"
+    if [ -f "/etc/yum.repos.d/CentOS-Linux-${repo_name}.repo" ]; then
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[${repo_id}\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/${repo_subdir}/\$basearch/os" "/etc/yum.repos.d/CentOS-Linux-${repo_name}.repo"
+    elif [ -f "/etc/yum.repos.d/CentOS-${repo_name_alt}.repo" ]; then
+        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[\(${repo_id}\|${repo_name}\)\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/${repo_subdir}/\$basearch/os" "/etc/yum.repos.d/CentOS-${repo_name_alt}.repo"
+    elif [ -n "${repo_name_alt}" ]; then
+        echo "Error: No repo file found for ${repo_name}" >&2
+        return 1
+    fi
+}
+
+#
 # Perform dnf upgrade (and fix repos since CentOS mirrorlist is offline as of 2022-01-31)
 #
 dnf_upgrade() {
     local -r step='Fix DNF repositories to live mirror and run dnf upgrade -y'
     if [[ "$(get_os_release_var 'NAME')" != 'CentOS Stream' ]]; then
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[baseos\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/BaseOS/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-BaseOS.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[appstream\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/AppStream/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-AppStream.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[cr\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/ContinuousRelease/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-ContinuousRelease.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[devel\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/Devel/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Devel.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[extras\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/extras/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Extras.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[fasttrack\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/fasttrack/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-FastTrack.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[ha\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/HighAvailability/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-HighAvailability.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[plus\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/centosplus/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-Plus.repo
-        sed -i -e "/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=\$releasever&arch=\$basearch&repo=/ s/^#*/#/" -e "/baseurl=http:\/\/mirror.centos.org\/\$contentdir\/\$releasever\// s/^#*/#/" -e "/^\[powertools\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/PowerTools/\$basearch/os" /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
+        fix_repo_file baseos BaseOS Base
+        fix_repo_file appstream AppStream
+        fix_repo_file cr ContinuousRelease CR
+        fix_repo_file devel Devel ''
+        fix_repo_file extras Extras Extras extras
+        fix_repo_file fasttrack FastTrack fasttrack fasttrack
+        fix_repo_file ha HighAvailability ''
+        fix_repo_file plus Plus centosplus
+        fix_repo_file powertools PowerTools
     fi
     dnf upgrade -y || {
         ret_code=${?}
