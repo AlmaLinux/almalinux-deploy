@@ -4,10 +4,10 @@ ${currentBuild.fullDisplayName} / ${currentBuild.number}
 Check url: ${currentBuild.absoluteUrl}.
 """
 
-def supported_8_machine_names = ["centos8", "generic-rhel8", "oracle8", "rockylinux8"]
+def supported_8_machine_names = ["oracle8", "rhel8", "rocky8"]
 def supported_centos_stream = ["centos8stream"]
-def legacy_8_5_machine_names = ["centos8-5", "oracle8-5", "rockylinux8-5"]
-def legacy_8_4_machine_names = ["centos8-4", "rockylinux8-4"]
+def legacy_8_5_machine_names = ["centos8-5", "oracle8-5", "rhel8-5", "rocky8-5"]
+def legacy_8_4_machine_names = ["centos8-4", "oracle8-4", "rhel8-4", "rocky8-4"]
 
 pipeline {
     agent {
