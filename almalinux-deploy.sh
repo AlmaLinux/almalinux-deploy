@@ -190,6 +190,11 @@ get_os_version() {
 	            report_step_error "Detect ${os_type} version"
 	        fi
         fi
+    elif [[ "${os_type}" == 'virtuozzo' ]]; then
+        if ! os_version="$(grep -oP 'Virtuozzo\s+Linux\s+release\s+\K(\d+\.\d+)' \
+	        "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
+            report_step_error "Detect ${os_type} version"
+        fi
     else
         os_version="$(get_os_release_var 'VERSION_ID')"
     fi
