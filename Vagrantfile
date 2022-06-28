@@ -31,6 +31,11 @@ Vagrant.configure("2") do |config|
     i.vm.hostname = "centos8"
   end
 
+  config.vm.define "centos8stream" do |i|
+    i.vm.box = "eurolinux-vagrant/centos-stream-8"
+    i.vm.hostname = "centos8stream"
+  end
+
   config.vm.define "oracle8-5" do |i|
     i.vm.box = "eurolinux-vagrant/oracle-linux-8"
     i.vm.hostname = "oracle8-5"
