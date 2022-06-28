@@ -29,7 +29,9 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "redhat-backgrounds" "redhat-logos" "redhat-indexhtml" \
                 "redhat-logos-ipa" "redhat-logos-httpd" \
                 "rocky-backgrounds" "rocky-logos" "rocky-indexhtml" \
-                "rocky-logos-ipa" "rocky-logos-httpd")
+                "rocky-logos-ipa" "rocky-logos-httpd" \
+                "vzlinux-backgrounds" "vzlinux-logos" "vzlinux-indexhtml" \
+                "vzlinux-logos-ipa" "vzlinux-logos-httpd")
 
 REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "centos-stream-release" "centos-stream-repos" \
@@ -38,7 +40,8 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "redhat-release" "redhat-release-eula" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
-                "rocky-obsolete-packages" "libblockdev-btrfs")
+                "rocky-obsolete-packages" "libblockdev-btrfs" \
+		"vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages")
 
 module_list_enabled=""
 module_list_installed=""
@@ -187,6 +190,11 @@ get_os_version() {
 	            report_step_error "Detect ${os_type} version"
 	        fi
         fi
+    elif [[ "${os_type}" == 'virtuozzo' ]]; then
+        if ! os_version="$(grep -oP 'Virtuozzo\s+Linux\s+release\s+\K(\d+\.\d+)' \
+	        "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
+            report_step_error "Detect ${os_type} version"
+        fi
     else
         os_version="$(get_os_release_var 'VERSION_ID')"
     fi
@@ -233,7 +241,7 @@ assert_supported_system() {
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
-    os_types=("centos" "almalinux" "ol" "rhel" "rocky")
+    os_types=("centos" "almalinux" "ol" "rhel" "rocky" "virtuozzo")
     if [[ ! " ${os_types[*]} " =~ ${os_type} ]]; then
         report_step_error "Check ${os_type} operating system is supported"
         exit 1
@@ -536,7 +544,7 @@ replace_brand_packages() {
                     ;;
                 *)
                     # shellcheck disable=SC2001
-                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat\|rocky#almalinux#')"
+                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat\|rocky\|vzlinux#almalinux#')"
                     ;;
             esac
             alma_pkgs+=("${alma_pkg}")
@@ -969,7 +977,7 @@ main() {
     assert_compatible_os_version "${os_version}" "${release_path}"
 
     case "${os_type}" in
-    almalinux|centos|ol|rhel|rocky)
+    almalinux|centos|ol|rhel|rocky|virtuozzo)
         backup_issue
         migrate_from_centos "${release_path}"
         ;;

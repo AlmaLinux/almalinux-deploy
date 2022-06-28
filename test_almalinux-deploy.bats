@@ -126,7 +126,7 @@ teardown() {
 }
 
 @test 'assert_supported_system fails on unsupported distributions' {
-    for os_id in 'fedora' 'virtuozzo'; do
+    for os_id in 'fedora'; do
         run assert_supported_system "${os_id}" '8' 'x86_64'
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]
