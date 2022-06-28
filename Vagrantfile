@@ -12,6 +12,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provider "libvirt" do |libvirt|
     libvirt.random_hostname = true
+    libvirt.uri = 'qemu:///system'
   end
 
   config.vm.define "centos8-4" do |i|
