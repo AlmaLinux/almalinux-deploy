@@ -4,7 +4,7 @@ An EL to AlmaLinux migration tool.
 
 ## Usage
 
-In order to convert your EL8 operating system to AlmaLinux do the following:
+In order to convert your EL8 and EL9 operating systems to AlmaLinux do the following:
 
 1. CentOS 8.4 or 8.5 is required to convert to AlmaLinux.  It is recommended to update to 8.5 prior to moving to
 AlmaLinux but not required if you are on at least CentOS 8.4.  Rebooting after the updates is recommended if your system
@@ -29,7 +29,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
       sudo sed -i -e '/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=$releasever&arch=$basearch&repo=/ s/^#*/#/' -e '/baseurl=http:\/\/mirror.centos.org\/$contentdir\/$releasever\// s/^#*/#/' -e '/^\[plus\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/centosplus/$basearch/os' /etc/yum.repos.d/CentOS-Linux-Plus.repo
       sudo sed -i -e '/mirrorlist=http:\/\/mirrorlist.centos.org\/?release=$releasever&arch=$basearch&repo=/ s/^#*/#/' -e '/baseurl=http:\/\/mirror.centos.org\/$contentdir\/$releasever\// s/^#*/#/' -e '/^\[powertools\]/a baseurl=https://mirror.rackspace.com/centos-vault/8.5.2111/PowerTools/$basearch/os' /etc/yum.repos.d/CentOS-Linux-PowerTools.repo
       ```
-    - You can use the `-f` flag (ie `sudo bash almalinux-deploy.sh -f`) to handle this for you. 
+    - You can use the `-f` flag (ie `sudo bash almalinux-deploy.sh -f`) to handle this for you.
 2. Back up of the system. We didn't test all possible scenarios so there
    is a risk that something goes wrong. In such a situation you will have a
    restore point.
@@ -80,6 +80,7 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 * [x] cPanel control panel support.
 * [x] Plesk control panel support.
 * [x] CentOS Stream 8 downgrade support with `-d` option.
+* [x] EL9 (RHEL 9, Oracle Linux 9, Rocky Linux 9, Virtuozzo Linux 9) and CentOS Stream 9 support
 * [ ] Cover all common scenarios with tests.
 * [ ] Add OpenNebula support to Molecule test suite.
 
@@ -102,6 +103,7 @@ Technology stack:
   [Testinfra](https://github.com/pytest-dev/pytest-testinfra). Virtual machines
   are powered by [Vagrant](https://www.vagrantup.com/) and
   [VirtualBox](https://www.virtualbox.org/).
+ * CI/CD: Jenkins and an agent with [Vagrant Libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt).
 
 To run the functional tests do the following:
 

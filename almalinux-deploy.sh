@@ -25,7 +25,7 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
                 "oracle-backgrounds" "oracle-logos" "oracle-indexhtml" \
                 "oracle-logos-ipa" "oracle-logos-httpd" \
-                "oracle-epel-release-el8" \
+                "oracle-epel-release-el8" "oracle-epel-release-el9" \
                 "redhat-backgrounds" "redhat-logos" "redhat-indexhtml" \
                 "redhat-logos-ipa" "redhat-logos-httpd" \
                 "rocky-backgrounds" "rocky-logos" "rocky-indexhtml" \
@@ -35,14 +35,16 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
 
 REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "centos-stream-release" "centos-stream-repos" \
+                "kernel-uek" "kernel-uek-core" "kernel-uek-modules" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "linux-firmware-core" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
+                "oraclelinux-release-el9" "python3-gobject-base-noarch" \
                 "redhat-release" "redhat-release-eula" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
                 "rocky-obsolete-packages" "libblockdev-btrfs" \
-		"vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages")
+                "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages")
 
 module_list_enabled=""
 module_list_installed=""
@@ -238,7 +240,7 @@ assert_supported_system() {
             exit 1
             ;;
     esac
-    if [[ ${os_version} -ne ${MINIMAL_SUPPORTED_VERSION:0:1} ]]; then
+    if [[ ${os_version} -lt ${MINIMAL_SUPPORTED_VERSION:0:1} ]]; then
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
@@ -318,14 +320,29 @@ get_release_file_url() {
     echo "${ALMA_RELEASE_URL:-https://repo.almalinux.org/almalinux/almalinux-release-latest-${os_version}.${arch}.rpm}"
 }
 
+# Returns a latest almalinux-repos RPM package download URL.
+#
+# $1 - AlmaLinux major version (e.g. 9).
+# $2 - System architecture (e.g. x86_64).
+#
+# Prints almalinux-release RPM package download URL.
+get_repos_file_url() {
+    local -r os_version="${1:0:1}"
+    local -r arch="${2}"
+    echo "${ALMA_REPOS_URL:-https://repo.almalinux.org/almalinux/almalinux-repos-latest-${os_version}.${arch}.rpm}"
+}
+
 # Downloads and installs the AlmaLinux public PGP key.
 #
 # $1 - Temporary directory path.
+# $2 - AlmaLinux major version (e.g. 8).
 install_rpm_pubkey() {
     if get_status_of_stage "install_rpm_pubkey"; then
         return 0
     fi
     local -r tmp_dir="${1}"
+    local -r os_version="${2:0:1}"
+    local -r ALMA_PUBKEY_URL="https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux-${os_version}"
     local -r pubkey_url="${ALMA_PUBKEY_URL:-https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux}"
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
     local -r step='Download RPM-GPG-KEY-AlmaLinux'
@@ -344,20 +361,38 @@ install_rpm_pubkey() {
 
 # Downloads almalinux-release package.
 #
-# $1 - almalinux-release package download URL.
-# $2 - Temporary directory path.
+# $1 - Temporary directory path.
+# $2 - almalinux-release package download URL.
 #
 # Prints downloaded file path.
-download_release_file() {
-    local -r release_url="${1}"
-    local -r tmp_dir="${2}"
+download_release_files() {
+    local -r tmp_dir="${1}"
+    local -r release_url="${2}"
     local -r release_path="${tmp_dir}/almalinux-release-latest.rpm"
     local output
     if ! output=$(curl -f -s -S -o "${release_path}" "${release_url}" 2>&1); then
-        report_step_error 'Download almalinux-release package' "${output}"
+        report_step_error 'Download almalinux packages - release' "${output}"
         exit 1
     fi
     echo "${release_path}"
+}
+
+# Downloads almalinux-repos package.
+#
+# $1 - Temporary directory path.
+# $2 - almalinux-repos package download URL.
+#
+# Prints downloaded file path.
+download_repos_files() {
+    local -r tmp_dir="${1}"
+    local -r repos_url="${2}"
+    local -r repos_path="${tmp_dir}/almalinux-repos.rpm"
+    local output
+    if ! output=$(curl -f -s -S -o "${repos_path}" "${repos_url}" 2>&1); then
+        report_step_error 'Download almalinux packages - repos' "${output}"
+        exit 1
+    fi
+    echo "${repos_path}"
 }
 
 # Terminates the program if a given RPM package checksum/signature is invalid.
@@ -411,6 +446,7 @@ dnf_upgrade() {
         fix_repo_file ha HighAvailability ''
         fix_repo_file plus Plus centosplus
         fix_repo_file powertools PowerTools
+        fix_repo_file crb CRB
     fi
     dnf upgrade -y || {
         ret_code=${?}
@@ -438,14 +474,14 @@ assert_compatible_os_version() {
     alma_version=$(rpm -qp --queryformat '%{version}' "${release_path}")
 
     if [[ "$(get_os_release_var 'NAME')" != 'CentOS Stream' ]]; then
-	if [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
-	    report_step_error "Please upgrade your OS from ${os_version} to" \
-	    "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
-	    exit 1
+	      if [[ "${os_version:0:1}" -lt "${MINIMAL_SUPPORTED_VERSION:0:1}" ]] && [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
+          report_step_error "Please upgrade your OS from ${os_version} to" \
+          "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
+          exit 1
         fi
     fi
-    if [[ "${os_version:2:3}" -gt "${alma_version:2:3}" ]]; then
-        report_step_error "Version of you OS ${os_version} is not supported yet"
+    if [[ "${os_version:0:1}" -lt "${alma_version:0:1}" ]] && [[ "${os_version:2:3}" -gt "${alma_version:2:3}" ]]; then
+        report_step_error "Version of your OS ${os_version} is not supported yet"
         exit 1
     fi
     report_step_done 'Your OS is supported'
@@ -519,11 +555,21 @@ install_almalinux_release_package() {
         return 0
     fi
     local -r release_path="${1}"
-    rpm -Uvh "${release_path}"
+    rpm -Uvh --nodeps "${release_path}"
     report_step_done 'Install almalinux-release package'
     save_status_of_stage "install_almalinux_release_package"
 }
 
+# Install package almalinux-repos
+install_almalinux_repos_package() {
+    if get_status_of_stage "install_almalinux_repos_package"; then
+        return 0
+    fi
+    local -r repos_path="${1}"
+    rpm -Uvh --nodeps "${repos_path}"
+    report_step_done 'Install almalinux-repos package'
+    save_status_of_stage "install_almalinux_repos_package"
+}
 
 # Remove brand packages and install the same AlmaLinux packages
 replace_brand_packages() {
@@ -540,7 +586,7 @@ replace_brand_packages() {
         if rpm -q "${pkg_name}" &>/dev/null; then
             # shellcheck disable=SC2001
             case "${pkg_name}" in
-                oracle-epel-release-el8)
+                oracle-epel-release-el*)
                     alma_pkg="epel-release"
                     ;;
                 *)
@@ -570,16 +616,27 @@ replace_brand_packages() {
 # Converts a CentOS like system to AlmaLinux
 #
 # $1 - almalinux-release RPM package path.
+# $2 - almalinux-repos RPM package path.
 migrate_from_centos() {
     if get_status_of_stage "migrate_from_centos"; then
         return 0
     fi
     local -r release_path="${1}"
+    case "${os_version}" in
+      9*)
+        local -r repos_path="${2}"
+        ;;
+    esac
     # replace OS packages with almalinux-release
     # and OS centos-specific packages
     remove_os_specific_packages_before_migration
     remove_not_needed_redhat_dirs
     install_almalinux_release_package "${release_path}"
+    case "${os_version}" in
+      9*)
+        install_almalinux_repos_package "${repos_path}"
+        ;;
+    esac
     replace_brand_packages
     save_status_of_stage "migrate_from_centos"
 }
@@ -598,13 +655,23 @@ reset_wrong_module_streams() {
 
 # Executes the 'dnf distro-sync -y' command.
 #
+# $1 - operational system type.
+#
 distro_sync() {
     if get_status_of_stage "distro_sync"; then
         return 0
     fi
     local -r step='Run dnf distro-sync -y'
     local ret_code=0
-    local dnf_repos="--enablerepo=powertools"
+    local -r os_version="${1}"
+    case "${os_version}" in
+      8*)
+        local dnf_repos="--enablerepo=powertools"
+        ;;
+      9*)
+        local dnf_repos="--enablerepo=crb"
+        ;;
+    esac
     local exclude_pkgs="--exclude="
     # create needed repo
     if [ "${panel_type}" == "plesk" ]; then
@@ -963,9 +1030,9 @@ main() {
     tmp_dir=$(mktemp -d --tmpdir="${BASE_TMP_DIR}" .alma.XXXXXX)
     # shellcheck disable=SC2064
     trap "cleanup_tmp_dir ${tmp_dir}" EXIT
-    install_rpm_pubkey "${tmp_dir}"
+    install_rpm_pubkey "${tmp_dir}" "${os_version}"
 
-    release_path=$(download_release_file "${release_url}" "${tmp_dir}")
+    release_path=$(download_release_files "${tmp_dir}" "${release_url}")
     report_step_done 'Download almalinux-release package'
     if mount | grep -q fuse.lxcfs ||
         env | grep -q 'container=lxc' ||
@@ -980,7 +1047,17 @@ main() {
     case "${os_type}" in
     almalinux|centos|ol|rhel|rocky|virtuozzo)
         backup_issue
-        migrate_from_centos "${release_path}"
+        
+        case "${os_version}" in
+          8*)
+            migrate_from_centos "${release_path}"
+            ;;
+          9*)
+            repos_url=$(get_repos_file_url "${os_version}" "${arch}")
+            repos_path=$(download_repos_files "${tmp_dir}" "${repos_url}")
+            migrate_from_centos "${release_path}" "${repos_path}"
+            ;;
+        esac
         ;;
     *)
         report_step_error "Migrate ${os_type}: not supported"
@@ -990,7 +1067,7 @@ main() {
 
     backup_alternatives
     reset_wrong_module_streams
-    distro_sync
+    distro_sync "${os_version}"
     restore_module_streams
     restore_alternatives
     restore_issue
