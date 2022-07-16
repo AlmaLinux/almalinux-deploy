@@ -525,6 +525,32 @@ install_almalinux_release_package() {
 }
 
 
+# Detect Foreman (/etc/yum.repos.d/redhat.repo) and disable AlmaLinux repos if Foreman is in use
+detect_foreman() {
+    if get_status_of_stage "detect_foreman"; then
+        return 0
+    fi
+    if [ -x /usr/sbin/subscription-manager ]; then
+        if subscription-manager status &>/dev/null; then
+            echo "Foreman subscription detected"
+            if [ -f "/etc/yum.repos.d/redhat.repo" ]; then
+                if grep -q "^[[:space:]]*enabled[[:space:]]*=[[:space:]]*1" /etc/yum.repos.d/redhat.repo; then
+                    echo "  - Foreman repos are in use"
+                    for file in /etc/yum.repos.d/{almalinux,almalinux-ha,almalinux-powertools}.repo; do
+                        if [ -f $file ]; then
+                            echo "  - disable repos: $file"
+                            sed -i s/enabled=1/enabled=0/g $file
+                        fi
+                    done
+                fi
+            fi
+        fi
+    fi
+    report_step_done 'Detect Foreman'
+    save_status_of_stage "detect_foreman"
+}
+
+
 # Remove brand packages and install the same AlmaLinux packages
 replace_brand_packages() {
     if get_status_of_stage "replace_brand_packages"; then
@@ -580,6 +606,7 @@ migrate_from_centos() {
     remove_os_specific_packages_before_migration
     remove_not_needed_redhat_dirs
     install_almalinux_release_package "${release_path}"
+    detect_foreman
     replace_brand_packages
     save_status_of_stage "migrate_from_centos"
 }
