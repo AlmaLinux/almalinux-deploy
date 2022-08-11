@@ -105,8 +105,10 @@ teardown() {
 }
 
 @test 'assert_supported_system passes on CentOS-8 x86_64' {
-    run assert_supported_system 'centos' '8' 'x86_64'
-    [[ ${status} -eq 0 ]]
+    for os_version in 8 9; do
+      run assert_supported_system 'centos' "${os_version}" 'x86_64'
+      [[ ${status} -eq 0 ]]
+    done
 }
 
 @test 'assert_supported_system fails on unsupported architectures' {
@@ -118,7 +120,7 @@ teardown() {
 }
 
 @test 'assert_supported_system fails on non-EL8' {
-    for os_version in 6 7 9; do
+    for os_version in 6 7; do
         run assert_supported_system 'centos' "${os_version}" 'x86_64'
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]
