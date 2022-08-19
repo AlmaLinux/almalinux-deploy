@@ -740,16 +740,12 @@ grub_update() {
     if get_status_of_stage "grub_update"; then
         return 0
     fi
-    if [ -d /sys/firmware/efi ]; then
-        if [ -d /boot/efi/EFI/almalinux ]; then
-            grub2-mkconfig -o /boot/efi/EFI/almalinux/grub.cfg
-        elif [ -d /boot/efi/EFI/centos ]; then
-            grub2-mkconfig -o /boot/efi/EFI/centos/grub.cfg
+    if [ $(which grub2-mkconfig) ] ; then
+        if [ -d /sys/firmware/efi ]; then
+            grub2-mkconfig -o /etc/grub2-efi.cfg
         else
-            grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+            grub2-mkconfig -o /etc/grub2.cfg
         fi
-    else
-        grub2-mkconfig -o /boot/grub2/grub.cfg
     fi
     save_status_of_stage "grub_update"
 }
