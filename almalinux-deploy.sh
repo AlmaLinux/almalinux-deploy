@@ -233,7 +233,7 @@ assert_supported_system() {
     local -r os_version="${2:0:1}"
     local -r arch="${3}"
     case "${arch}" in
-        x86_64|aarch64)
+        x86_64|aarch64|ppc64le)
             ;;
         *)
             report_step_error "Check ${arch} architecture is supported"
