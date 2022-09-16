@@ -740,7 +740,7 @@ grub_update() {
     if get_status_of_stage "grub_update"; then
         return 0
     fi
-    if [ $(which grub2-mkconfig) ] ; then
+    if [ "$(which grub2-mkconfig)" ] ; then
         if [ -d /sys/firmware/efi ]; then
             grub2-mkconfig -o /etc/grub2-efi.cfg
         else
