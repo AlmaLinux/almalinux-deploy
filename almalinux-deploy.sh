@@ -985,15 +985,17 @@ reinstall_secure_boot_packages() {
     if get_status_of_stage "reinstall_secure_boot_packages"; then
         return 0
     fi
-    local kernel_package
-    for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2'); do
-        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
-            yum reinstall "${pkg}" -y
+    if [ "$(which grubby)" ] ; then #if this happens on a system with GRUB and related tools, rather than on RPi
+        local kernel_package
+        for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2'); do
+            if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
+                yum reinstall "${pkg}" -y
+            fi
+        done
+        kernel_package="$(rpm -qf "$(grubby --default-kernel)")"
+        if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
+            yum reinstall "${kernel_package}" -y
         fi
-    done
-    kernel_package="$(rpm -qf "$(grubby --default-kernel)")"
-    if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
-        yum reinstall "${kernel_package}" -y
     fi
     report_step_done "All Secure Boot related packages which were not released by AlmaLinux are reinstalled"
     save_status_of_stage "reinstall_secure_boot_packages"
