@@ -708,7 +708,7 @@ restore_module_streams() {
         # shellcheck disable=SC2001,2086
         module_enabled_rhel=$(echo ${module_list_enabled} | sed -e 's# #:rhel8 #g')
         # shellcheck disable=SC2086
-        dnf module enable -y ${module_enabled_rhel}
+        dnf --releasever=8.6 module enable -y ${module_enabled_rhel}
         echo "re-enabled modules: ${module_enabled_rhel}"
         report_step_done "Enable modules"
     fi
@@ -716,7 +716,7 @@ restore_module_streams() {
         # shellcheck disable=SC2001,2086
         module_installed_rhel=$(echo ${module_list_installed} | sed -e 's# #:rhel8 #g')
         # shellcheck disable=SC2086
-        dnf module install -y ${module_installed_rhel}
+        dnf --releasever=8.6 module install -y ${module_installed_rhel}
         echo "installed modules: ${module_installed_rhel}"
         report_step_done "Install modules"
     fi
@@ -727,7 +727,7 @@ install_kernel() {
         return 0
     fi
     if ! output=$(rpm -q kernel 2>&1); then
-        if output=$(dnf -y install kernel 2>&1); then
+        if output=$(dnf --releasever=8.6 -y install kernel 2>&1); then
             report_step_done "Install AlmaLinux kernel"
         else
             report_step_error "Install AlmaLinux kernel"
