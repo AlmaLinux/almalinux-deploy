@@ -317,7 +317,7 @@ assert_supported_filesystem() {
 get_release_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_RELEASE_URL:-https://repo.almalinux.org/almalinux/almalinux-release-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_RELEASE_URL:-https://repo.almalinux.org/almalinux/8.6/BaseOS/${arch}/os/Packages/almalinux-release-8.6-2.el8.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-repos RPM package download URL.
@@ -678,7 +678,7 @@ distro_sync() {
         plesk installer --select-release-current --show-components --skip-cleanup
         dnf_repos+=",PLESK_*-dist"
     fi
-    dnf check-update || {
+    dnf --releasever=8.6 check-update || {
         ret_code=${?}
         if [[ ${ret_code} -ne 0 ]] && [[ ${ret_code} -ne 100 ]]; then
             report_step_error "${step}. Exit code: ${ret_code}"
@@ -689,7 +689,7 @@ distro_sync() {
     if [ $is_container -eq 1 ]; then
         exclude_pkgs+="filesystem*,grub*"
     fi
-    dnf distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
+    dnf --releasever=8.6 distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
         ret_code=${?}
         report_step_error "${step}. Exit code: ${ret_code}"
         exit ${ret_code}
@@ -1045,7 +1045,7 @@ main() {
     case "${os_type}" in
     almalinux|centos|ol|rhel|rocky|virtuozzo)
         backup_issue
-        
+
         case "${os_version}" in
           8*)
             migrate_from_centos "${release_path}"
