@@ -32,6 +32,14 @@ teardown() {
     [[ ${output} == 'aarch64' ]]
 }
 
+@test 'get_system_arch returns ppc64le architecture' {
+    function uname() { echo 'ppc64le'; }
+    export -f uname
+    run get_system_arch
+    [[ ${status} -eq 0 ]]
+    [[ ${output} == 'ppc64le' ]]
+}
+
 @test 'assert_run_as_root passes for root' {
     function id() { echo 0; }
     export -f id
@@ -112,7 +120,7 @@ teardown() {
 }
 
 @test 'assert_supported_system fails on unsupported architectures' {
-    for arch in 'i686' 'ppc64le' 'armv7l'; do
+    for arch in 'i686' 'armv7l'; do
         run assert_supported_system 'centos' '8' "${arch}"
         [[ ${status} -ne 0 ]]
         [[ ${output} =~ 'ERROR' ]]
