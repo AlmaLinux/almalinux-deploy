@@ -45,6 +45,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
                 "rocky-obsolete-packages" "libblockdev-btrfs" \
                 "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages")
+REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
 
 module_list_enabled=""
 module_list_installed=""
@@ -1001,6 +1002,26 @@ reinstall_secure_boot_packages() {
     save_status_of_stage "reinstall_secure_boot_packages"
 }
 
+disable_dnf_plugin() {
+    local plugin="$1"
+
+    local conf
+    conf="/etc/dnf/plugins/${plugin}.conf"
+
+    if [ -f "${conf}" ]; then
+        sed -i -e 's/^enabled\s*=\s*1/enabled=0/g' "${conf}"
+    else
+        printf '[main]\nenabled=0\n' > "${conf}"
+    fi
+}
+
+disable_redhat_dnf_plugins() {
+    local plugin
+
+    for plugin in "${REDHAT_DNF_PLUGINS[@]}"; do
+        disable_dnf_plugin "${plugin}"
+    done
+}
 
 main() {
     is_migration_completed
@@ -1045,7 +1066,11 @@ main() {
     case "${os_type}" in
     almalinux|centos|ol|rhel|rocky|virtuozzo)
         backup_issue
-        
+
+        if [[ "${os_type}" == "rhel" ]]; then
+            disable_redhat_dnf_plugins
+        fi
+
         case "${os_version}" in
           8*)
             migrate_from_centos "${release_path}"
