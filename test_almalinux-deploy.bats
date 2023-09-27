@@ -40,6 +40,14 @@ teardown() {
     [[ ${output} == 'ppc64le' ]]
 }
 
+@test 'get_system_arch returns s390x architecture' {
+    function uname() { echo 's390x'; }
+    export -f uname
+    run get_system_arch
+    [[ ${status} -eq 0 ]]
+    [[ ${output} == 's390x' ]]
+}
+
 @test 'assert_run_as_root passes for root' {
     function id() { echo 0; }
     export -f id
