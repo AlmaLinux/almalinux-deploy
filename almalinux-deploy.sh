@@ -45,7 +45,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
                 "rocky-obsolete-packages" "libblockdev-btrfs" \
                 "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages" \
-                "epel-next-release")
+                "evolution-data-server-ui" "epel-next-release")
 REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
 
 module_list_enabled=""
