@@ -1,23 +1,19 @@
-AGENT = 'almalinux-8-vagrant-libvirt-x86_64'
 RETRY = '3'
 TIMEOUT = '20' // Adapt it based on the hardware resources and internet connection speed of your Jenkins agent.
 
 pipeline {
     agent {
-        label AGENT
+        label 'x86_64 && bm'
     }
-    parameters {
-        string(name: 'REPO_URL', defaultValue: 'https://github.com/AlmaLinux/almalinux-deploy.git', description: 'URL of the repository')
-        string(name: 'REPO_BRANCH', defaultValue: 'master', description: 'Branch of the repository')
+    options {
+        timestamps()
+        parallelsAlwaysFailFast()
+    }
+    environment {
+        VAGRANT_NO_COLOR = '1'
     }
     stages {
-        stage('Source') {
-            steps {
-                git url: REPO_URL,
-                    branch: REPO_BRANCH
-            }
-        }
-        stage('Migrate supported EL 9 stable systems to AlmaLinux 9') {
+        stage('EL9') {
             matrix {
                 axes {
                     axis {
@@ -43,7 +39,7 @@ pipeline {
                 }
             }
         }
-        stage('Migrate supported EL 8 stable systems to AlmaLinux 8') {
+        stage('EL8') {
             matrix {
                 axes {
                     axis {
@@ -69,7 +65,7 @@ pipeline {
                 }
             }
         }
-        stage('Migrate supported CentOS Stream to equivalent AlmaLinux') {
+        stage('CentOS Stream') {
             matrix {
                 axes {
                     axis {
@@ -95,7 +91,7 @@ pipeline {
                 }
             }
         }
-        stage('Migrate legacy 8.5 stable systems to AlmaLinux 8') {
+        stage('EL8.5') {
             matrix {
                 axes {
                     axis {
@@ -104,7 +100,7 @@ pipeline {
                     }
                 }
                 stages {
-                    stage('EL85 to AlmaLinux 8') {
+                    stage('EL8.5 to AlmaLinux 8') {
                         steps {
                             retry(RETRY) {
                                 timeout(time: TIMEOUT, unit: 'MINUTES') {
@@ -121,7 +117,7 @@ pipeline {
                 }
             }
         }
-        stage('Migrate legacy 8.4 stable systems to AlmaLinux 8') {
+        stage('EL8.4') {
             matrix {
                 axes {
                     axis {
