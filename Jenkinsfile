@@ -1,5 +1,5 @@
 RETRY = '3'
-TIMEOUT = '20' // Adapt it based on the hardware resources and internet connection speed of your Jenkins agent.
+TIMEOUT = '60' // Adapt it based on the hardware resources and internet connection speed of your Jenkins agent.
 
 pipeline {
     agent {
