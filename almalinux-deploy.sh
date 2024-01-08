@@ -334,6 +334,18 @@ get_repos_file_url() {
     echo "${ALMA_REPOS_URL:-https://repo.almalinux.org/almalinux/almalinux-repos-latest-${os_version}.${arch}.rpm}"
 }
 
+# Returns a latest almalinux-gpg-keys RPM package download URL.
+#
+# $1 - AlmaLinux major version (e.g. 9).
+# $2 - System architecture (e.g. x86_64).
+#
+# Prints almalinux-gpg-keys RPM package download URL.
+get_gpg_keys_file_url() {
+    local -r os_version="${1:0:1}"
+    local -r arch="${2}"
+    echo "${ALMA_REPOS_URL:-https://repo.almalinux.org/almalinux/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
+}
+
 # Downloads and installs the AlmaLinux public PGP key.
 #
 # $1 - Temporary directory path.
@@ -395,6 +407,24 @@ download_repos_files() {
         exit 1
     fi
     echo "${repos_path}"
+}
+
+# Downloads almalinux-gpg-keys package.
+#
+# $1 - Temporary directory path.
+# $2 - almalinux-gpg-keys package download URL.
+#
+# Prints downloaded file path.
+download_gpg_keys_files() {
+    local -r tmp_dir="${1}"
+    local -r gpg_keys_url="${2}"
+    local -r gpg_keys_path="${tmp_dir}/almalinux-gpg-keys.rpm"
+    local output
+    if ! output=$(curl -f -s -S -o "${gpg_keys_path}" "${gpg_keys_url}" 2>&1); then
+        report_step_error 'Download almalinux packages - gpg-keys' "${output}"
+        exit 1
+    fi
+    echo "${gpg_keys_path}"
 }
 
 # Terminates the program if a given RPM package checksum/signature is invalid.
@@ -573,6 +603,19 @@ install_almalinux_repos_package() {
     save_status_of_stage "install_almalinux_repos_package"
 }
 
+# Install package almalinux-gpg-keys
+#
+# $1 - full path (including package filename) to the almalinux-gpg-keys package
+install_almalinux_gpg_keys_package() {
+    if get_status_of_stage "install_almalinux_gpg_keys_package"; then
+        return 0
+    fi
+    local -r gpg_keys_path="${1}"
+    rpm -Uvh --nodeps "${gpg_keys_path}"
+    report_step_done 'Install almalinux-gpg-keys package'
+    save_status_of_stage "install_almalinux_gpg_keys_package"
+}
+
 # Remove brand packages and install the same AlmaLinux packages
 replace_brand_packages() {
     if get_status_of_stage "replace_brand_packages"; then
@@ -619,6 +662,7 @@ replace_brand_packages() {
 #
 # $1 - almalinux-release RPM package path.
 # $2 - almalinux-repos RPM package path.
+# $3 - almalinux-gpg-keys RPM package path
 migrate_from_centos() {
     if get_status_of_stage "migrate_from_centos"; then
         return 0
@@ -627,6 +671,7 @@ migrate_from_centos() {
     case "${os_version}" in
       9*)
         local -r repos_path="${2}"
+        local -r gpg_keys_path="${3}"
         ;;
     esac
     # replace OS packages with almalinux-release
@@ -637,6 +682,7 @@ migrate_from_centos() {
     case "${os_version}" in
       9*)
         install_almalinux_repos_package "${repos_path}"
+        install_almalinux_gpg_keys_package "${gpg_keys_path}"
         ;;
     esac
     replace_brand_packages
@@ -1079,7 +1125,9 @@ main() {
           9*)
             repos_url=$(get_repos_file_url "${os_version}" "${arch}")
             repos_path=$(download_repos_files "${tmp_dir}" "${repos_url}")
-            migrate_from_centos "${release_path}" "${repos_path}"
+            gpg_keys_url=$(get_gpg_keys_file_url "${os_version}" "${arch}")
+            gpg_keys_path=$(download_gpg_keys_files "${tmp_dir}" "${gpg_keys_url}")
+            migrate_from_centos "${release_path}" "${repos_path}" "${gpg_keys_path}"
             ;;
         esac
         ;;
