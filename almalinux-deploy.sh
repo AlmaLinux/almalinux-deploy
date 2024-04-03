@@ -38,7 +38,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "kernel-uek" "kernel-uek-core" "kernel-uek-modules" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
-                "linux-firmware-core" \
+                "linux-firmware-core" "iwlax2xx-firmware" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "oraclelinux-release-el9" "python3-gobject-base-noarch" \
                 "redhat-release" "redhat-release-eula" \
