@@ -47,6 +47,8 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages" \
                 "evolution-data-server-ui" "epel-next-release")
 REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
+REDHAT_REPO_FILES=("/etc/yum.repos.d/redhat.repo" "/etc/yum.repos.d/ubi.repo")
+REDHAT_RHSM_RPMS=("subscription-manager" "subscription-manager-cockpit" "cockpit" "rhc")
 
 module_list_enabled=""
 module_list_installed=""
@@ -1070,6 +1072,42 @@ disable_redhat_dnf_plugins() {
     done
 }
 
+subscription_manager_unregister() {
+    if get_status_of_stage "subscription_manager_unregister"; then
+        return 0
+    fi
+    if subscription-manager status >/dev/null 2>&1; then
+        subscription-manager remove --all
+        subscription-manager unregister
+        subscription-manager clean
+    fi
+    report_step_done "Red Hat Subscription Manager deactivated"
+    save_status_of_stage "subscription_manager_unregister"
+}
+
+remove_redhat_rhsm_rpms() {
+    if get_status_of_stage "remove_redhat_rhsm_rpms"; then
+        return 0
+    fi
+    rpm -e --nodeps "${REDHAT_RHSM_RPMS[@]}" >/dev/null 2>&1 || true
+    report_step_done "Red Hat Subscription Manager packages are removed (with rpm --nodeps)"
+    save_status_of_stage "remove_redhat_rhsm_rpms"
+}
+
+remove_redhat_repo_files() {
+    if get_status_of_stage "remove_redhat_repo_files"; then
+        return 0
+    fi
+    local repo
+    for repo in "${REDHAT_REPO_FILES[@]}"; do
+        if [ -e "${repo}" ]; then
+            mv -f "${repo}" "${repo}.$(date -u '+%s')"
+        fi
+    done
+    report_step_done "Remove RHEL repositories' files if any"
+    save_status_of_stage "remove_redhat_repo_files"
+}
+
 main() {
     is_migration_completed
     local arch
@@ -1115,7 +1153,9 @@ main() {
         backup_issue
 
         if [[ "${os_type}" == "rhel" ]]; then
-            disable_redhat_dnf_plugins
+            subscription_manager_unregister
+            remove_redhat_rhsm_rpms
+            remove_redhat_repo_files
         fi
 
         case "${os_version}" in
