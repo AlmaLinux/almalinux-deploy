@@ -553,7 +553,9 @@ cleanup_sss_cache() {
     fi
     if [[ "${DOWNGRADE}" == 'YES' ]]; then
         for file in /var/lib/sss/db/cache_*.ldb; do
-           mv -f ${file} ${file}.bak
+	   if [ -f ${file} ]; then
+               mv -f ${file} ${file}.bak
+	   fi
         done
     fi
     save_status_of_stage "cleanup_sss_cache"
