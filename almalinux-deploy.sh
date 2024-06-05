@@ -546,6 +546,21 @@ restore_issue() {
     save_status_of_stage "restore_issue"
 }
 
+# Cleanup sssd(8) cache
+cleanup_sss_cache() {
+    if get_status_of_stage "cleanup_sss_cache"; then
+        return 0
+    fi
+    if [[ "${DOWNGRADE}" == 'YES' ]]; then
+        for file in /var/lib/sss/db/cache_*.ldb; do
+	   if [ -f ${file} ]; then
+               mv -f ${file} ${file}.bak
+	   fi
+        done
+    fi
+    save_status_of_stage "cleanup_sss_cache"
+}
+
 # Recursively removes a given directory.
 #
 # $1 - Directory path.
@@ -1183,6 +1198,7 @@ main() {
     restore_module_streams
     restore_alternatives
     restore_issue
+    cleanup_sss_cache
     # don't do this steps if we inside the lxc container
     if [ $is_container -eq 0 ]; then
         install_kernel
