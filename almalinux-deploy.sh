@@ -11,7 +11,8 @@ set -euo pipefail
 BASE_TMP_DIR='/root'
 OS_RELEASE_PATH='/etc/os-release'
 REDHAT_RELEASE_PATH='/etc/redhat-release'
-STAGE_STATUSES_DIR='/var/run/almalinux-deploy-statuses'
+VAR_RUN='/var/run'
+STAGE_STATUSES_DIR="${VAR_RUN}/almalinux-deploy-statuses"
 ALT_ADM_DIR="/var/lib/alternatives"
 BAK_DIR="/tmp/alternatives_backup"
 ALT_DIR="/etc/alternatives"
@@ -69,6 +70,15 @@ save_status_of_stage() {
         return 0
     fi
     local -r stage_name="${1}"
+
+    # Manage /var/run
+    if [[ ! -d "${VAR_RUN}" ]]; then
+        if [[ -L "${VAR_RUN}" ]]; then
+            mkdir -p "$( readlink -f "${VAR_RUN}" )"
+        else
+            mkdir -p "$( realpath "${VAR_RUN}" )"
+        fi
+    fi
     if [[ ! -d "${STAGE_STATUSES_DIR}" ]]; then
         mkdir -p "${STAGE_STATUSES_DIR}"
     fi
