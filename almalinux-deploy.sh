@@ -1153,10 +1153,12 @@ main() {
 
     release_path=$(download_release_files "${tmp_dir}" "${release_url}")
     report_step_done 'Download almalinux-release package'
-    if mount | grep -q fuse.lxcfs ||
+    if mount 2>/dev/null | grep -q fuse.lxcfs ||
         env | grep -q 'container=lxc' ||
         awk '{print $1}' /proc/vz/veinfo 2>/dev/null ||
-        grep docker '/proc/1/cgroup' >/dev/null; then
+        grep docker '/proc/1/cgroup' >/dev/null ||
+        test -e /.dockerenv; then
+        printf '\033[0;32mDeploying inside container\033[0m\n'
         is_container=1
     fi
 
