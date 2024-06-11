@@ -848,7 +848,9 @@ _backup_alternative() {
     alt_name="$(basename "${path}")"
     alt_link="${ALT_DIR}/${alt_name}"
     alt_dest="$(readlink "${alt_link}")"
-    mkdir -p "${bak_dir}"
+    if [[ ! -d "${bak_dir}" ]]; then
+        mkdir -p "${bak_dir}"
+    fi
 
     # backup the current state of an alternative
     echo "${alt_dest} ${alt_link}" > "${bak_dir}/${bak_prefix}.${alt_name}"
