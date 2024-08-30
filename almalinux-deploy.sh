@@ -23,6 +23,8 @@ DOWNGRADE='NO'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
+                "miraclelinux-backgrounds" "miraclelinux-logos" "miraclelinux-indexhtml" \
+                "miraclelinux-logos-ipa" "miraclelinux-logos-httpd" \
                 "oracle-backgrounds" "oracle-logos" "oracle-indexhtml" \
                 "oracle-logos-ipa" "oracle-logos-httpd" \
                 "oracle-epel-release-el8" "oracle-epel-release-el9" \
@@ -39,6 +41,9 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "linux-firmware-core" "iwlax2xx-firmware" \
+                "miraclelinux-release" "miraclelinux-repos" "asianux-release" \
+                "axtsn-client-tools" "axtsn-setup" "dnf-axtu-plugin" \
+                "NetworkManager-config-connectivity-miraclelinux" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "oraclelinux-release-el9" "python3-gobject-base-noarch" \
                 "redhat-release" "redhat-release-eula" \
@@ -183,8 +188,9 @@ get_os_release_var() {
 # Prints OS version.
 get_os_version() {
     local -r os_type="${1}"
+    local -a no_minor_os_types=("centos" "miraclelinux" "virtuozzo")
     local os_version
-    if [[ "${os_type}" == 'centos' ]]; then
+    if [[ " ${no_minor_os_types[*]} " =~ [[:space:]]${os_type}[[:space:]] ]]; then
         if [[ "$(get_os_release_var 'NAME')"  == 'CentOS Stream' ]]; then
             if [[ ! "${DOWNGRADE}" == 'YES' ]]; then
                 report_step_error "Use '-d or --downgrade' option to allow downgrade from CentOS Stream"
@@ -192,15 +198,10 @@ get_os_version() {
             fi
 	        os_version="$(get_os_release_var 'VERSION_ID')"
         else
-	        if ! os_version="$(grep -oP 'CentOS\s+Linux\s+release\s+\K(\d+\.\d+)' \
-		        "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
-	            report_step_error "Detect ${os_type} version"
-	        fi
-        fi
-    elif [[ "${os_type}" == 'virtuozzo' ]]; then
-        if ! os_version="$(grep -oP 'Virtuozzo\s+Linux\s+release\s+\K(\d+\.\d+)' \
-	        "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
-            report_step_error "Detect ${os_type} version"
+            if ! os_version="$(grep -oP '\s+release\s+\K(\d+\.\d+)' \
+                    "${REDHAT_RELEASE_PATH}" 2>/dev/null)"; then
+                report_step_error "Detect ${os_type} version"
+            fi
         fi
     else
         os_version="$(get_os_release_var 'VERSION_ID')"
@@ -248,7 +249,7 @@ assert_supported_system() {
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
-    os_types=("centos" "almalinux" "ol" "rhel" "rocky" "virtuozzo")
+    os_types=("centos" "almalinux" "miraclelinux" "ol" "rhel" "rocky" "virtuozzo")
     if [[ ! " ${os_types[*]} " =~ ${os_type} ]]; then
         report_step_error "Check ${os_type} operating system is supported"
         exit 1
@@ -653,7 +654,7 @@ replace_brand_packages() {
                     ;;
                 *)
                     # shellcheck disable=SC2001
-                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|oracle\|redhat\|rocky\|vzlinux#almalinux#')"
+                    alma_pkg="$(echo "${pkg_name}" | sed 's#centos\|miraclelinux\|oracle\|redhat\|rocky\|vzlinux#almalinux#')"
                     ;;
             esac
             alma_pkgs+=("${alma_pkg}")
@@ -1166,7 +1167,7 @@ main() {
     assert_compatible_os_version "${os_version}" "${release_path}"
 
     case "${os_type}" in
-    almalinux|centos|ol|rhel|rocky|virtuozzo)
+    almalinux|centos|miraclelinux|ol|rhel|rocky|virtuozzo)
         backup_issue
 
         if [[ "${os_type}" == "rhel" ]]; then
