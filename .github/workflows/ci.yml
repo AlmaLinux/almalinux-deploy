@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: [ master ]
 
+  schedule:
+    # run every Monmday at 03:00 UTC
+    - cron:  '00 03 * * 1'
+
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -37,8 +41,8 @@ jobs:
 
   # Check deployment inside containers for various combinations of OSs and platforms
   Check:
-    # Run the job manually or if pull request event
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    # Do not run on push event
+    if: ${{ github.event_name != 'push' }}
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4  # number of jobs that can run simultaneously
@@ -193,8 +197,8 @@ jobs:
           # Update system
           RUN dnf -y clean all && dnf -y update
 
-          # HACK for Virtuozzo Linux 8
-          RUN grep Virtuozzo /etc/vzlinux-release | grep 8 2>&1 >/dev/null \
+          # HACK for Virtuozzo, Oracle, Rocky and Red Hat 8
+          RUN grep -E 'Virtuozzo|Red Hat|Rocky' /etc/redhat-release | grep -E '8\.' 2>&1 >/dev/null \
           && rm -f /var/lib/rpm/__db* \
           || true
 
