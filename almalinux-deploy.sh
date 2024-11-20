@@ -50,7 +50,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
                 "rocky-obsolete-packages" "libblockdev-btrfs" \
                 "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages" \
-                "evolution-data-server-ui" "epel-next-release" "openssl-fips-provider")
+                "evolution-data-server-ui" "epel-next-release" "openssl-fips-provider" "openssl-fips-provider-so")
 REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
 REDHAT_REPO_FILES=("/etc/yum.repos.d/redhat.repo" "/etc/yum.repos.d/ubi.repo")
 REDHAT_RHSM_RPMS=("subscription-manager" "subscription-manager-cockpit" "cockpit" "rhc")
