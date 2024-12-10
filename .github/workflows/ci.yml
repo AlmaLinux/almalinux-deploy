@@ -21,7 +21,7 @@ jobs:
   # for more options https://github.com/marketplace/actions/shellcheck
   shellcheck:
     name: Shellcheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Run ShellCheck
@@ -30,7 +30,7 @@ jobs:
   # Run bats tests for almalinux-deploy.sh script
   bats:
     name: Bats testing
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Setup Bats
         run: sudo apt-get install bats
@@ -43,7 +43,7 @@ jobs:
   Check:
     # Do not run on push event
     if: ${{ github.event_name != 'push' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       max-parallel: 4  # number of jobs that can run simultaneously
       fail-fast: false # continue other jobs if some of them fail
@@ -147,9 +147,11 @@ jobs:
 
       - name: Enable containerd image store on Docker Engine
         run: |
-          # Use containerd image store
-          sudo jq '.features |= . + { "containerd-snapshotter": true }' /etc/docker/daemon.json > ./daemon.json.${{ env.date_stamp }} && \
-          sudo mv -f ./daemon.json.${{ env.date_stamp }} /etc/docker/daemon.json
+          # JQ file to switch into containerd image store
+          cat << EOF > containerd-snapshotter.jq
+          .features |= . + { "containerd-snapshotter": true }
+          EOF
+          sudo sh -c 'jq -n -f containerd-snapshotter.jq > /etc/docker/daemon.json'
           sudo systemctl restart docker
           docker info -f '{{ .DriverStatus }}'
 
