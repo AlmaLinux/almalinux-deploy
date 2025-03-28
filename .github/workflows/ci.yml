@@ -199,6 +199,9 @@ jobs:
           # Update system
           RUN dnf -y clean all && dnf -y update
 
+          # Install DNF plugin
+          RUN dnf -y install dnf-plugins-core
+
           # HACK for Virtuozzo, Oracle, Rocky and Red Hat 8
           RUN grep -E 'Virtuozzo|Red Hat|Rocky' /etc/redhat-release | grep -E '8\.' 2>&1 >/dev/null \
           && rm -f /var/lib/rpm/__db* \
