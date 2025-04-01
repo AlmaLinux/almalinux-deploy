@@ -55,6 +55,27 @@ REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
 REDHAT_REPO_FILES=("/etc/yum.repos.d/redhat.repo" "/etc/yum.repos.d/ubi.repo")
 REDHAT_RHSM_RPMS=("subscription-manager" "subscription-manager-cockpit" "cockpit" "rhc")
 
+# File with the list of enabled repos
+REPO_ENABLED_LIST_FILE=/var/run/almalinux-deploy-statuses/repo_list_enabled
+# Map AlmaLinux to various EL repos
+declare -A repo_map
+# AlmaLinux CentOS Rocky MiracleLinux Virtuozzo OracleLinux RedHat
+repo_map["extras"]="extras extras-common 9-latest-extras ol8_addons ol9_addons"
+# High Availability repository on 8
+repo_map["ha"]="ha 8-latest-HighAvailability rhel-8-for-x86_64-highavailability-e4s-rpms rhel-8-for-x86_64-highavailability-eus-rpms rhel-8-for-x86_64-highavailability-rpms"
+# High Availability repository on 9
+repo_map["highavailability"]="highavailability 9-latest-HighAvailability ha rhel-9-for-x86_64-highavailability-e4s-rpms rhel-9-for-x86_64-highavailability-eus-rpms rhel-9-for-x86_64-highavailability-rpms"
+repo_map["nfv"]="nfv rhel-9-for-x86_64-nfv-e4s-rpms rhel-9-for-x86_64-nfv-rpms"
+repo_map["plus"]="plus"
+# PowerTools repository on 8
+repo_map["powertools"]="powertools 8-latest-PowerTools ol8_codeready_builder ol8_distro_builder codeready-builder-for-rhel-8-x86_64-eus-rpms codeready-builder-for-rhel-8-x86_64-rpms ubi-8-codeready-builder ubi-8-codeready-builder-rpms"
+# PowerTools repository on 9
+repo_map["crb"]="crb 9-latest-PowerTools powertools ol9_codeready_builder ol9_distro_builder codeready-builder-for-rhel-9-x86_64-eus-rpms codeready-builder-for-rhel-9-x86_64-rpms ubi-9-codeready-builder-rpms"
+repo_map["resilientstorage"]="resilientstorage resilient-storage 9-latest-ResilientStorage rhel-8-for-x86_64-resilientstorage-eus-rpms rhel-9-for-x86_64-resilientstorage-eus-rpms rhel-8-for-x86_64-resilientstorage-rpms rhel-9-for-x86_64-resilientstorage-rpms"
+repo_map["rt"]="rt rhel-8-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-e4s-rpms "
+repo_map["sap"]="sap rhel-8-for-x86_64-sap-netweaver-e4s-rpms rhel-8-for-x86_64-sap-netweaver-eus-rpms rhel-8-for-x86_64-sap-netweaver-rpms rhel-9-for-x86_64-sap-netweaver-e4s-rpms rhel-9-for-x86_64-sap-netweaver-eus-rpms rhel-9-for-x86_64-sap-netweaver-rpms"
+repo_map["saphana"]="saphana rhel-8-for-x86_64-sap-solutions-e4s-rpms rhel-8-for-x86_64-sap-solutions-eus-rpms rhel-8-for-x86_64-sap-solutions-rpms rhel-9-for-x86_64-sap-solutions-e4s-rpms rhel-9-for-x86_64-sap-solutions-eus-rpms rhel-9-for-x86_64-sap-solutions-rpms"
+
 module_list_enabled=""
 module_list_installed=""
 is_container=0
@@ -209,6 +230,53 @@ get_os_version() {
     echo "${os_version}"
 }
 
+# Stores dnf repositories enabled on the system into the ${REPO_ENABLED_LIST_FILE} file
+get_enabled_repos() {
+    if get_status_of_stage "get_enabled_repos"; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname ${REPO_ENABLED_LIST_FILE})"
+    dnf repolist --enabled | \
+        awk '/repo id/ {A=1; next} A {print $1}' \
+        >> "${REPO_ENABLED_LIST_FILE}"
+
+    report_step_done "Enabled repositories list created"
+    save_status_of_stage "get_enabled_repos"
+}
+
+# Enables AlmaLinux corresponded repositories that were enabled before the migration
+#
+# $1 - operational system type.
+enable_repos() {
+    local -r os_version="${1:0:1}"
+    if get_status_of_stage "enable_repos"; then
+        return 0
+    fi
+
+    # Loop over the list of enabled repositories on source system
+    while read -r source_repo; do
+        # Loop over the list of AlmaLinux to EL repositories mapping
+        for repo in "${!repo_map[@]}"; do
+            # Skip mapping if it is not for OS specific version
+            [ "${os_version}" = "9" ] &&  { [ "${repo}" = "ha" ] || [ "${repo}" = "powertools" ]; } && continue
+            [ "${os_version}" = "8" ] &&  { [ "${repo}" = "highavailability" ] || [ "${repo}" = "crb" ]; } && continue
+
+            # Check if the source repo is in the list of repos for the current mapping
+            IFS=" " read -r -a repos <<< "${repo_map[$repo]}"
+            for listed_repo in "${repos[@]}"; do
+                if [[ "${source_repo}" == "${listed_repo}" ]]; then
+                    # Enable the corresponding AlmaLinux repository
+                    dnf config-manager --set-enabled "${repo}" || \
+                        { report_step_error "Enable AlmaLinux repository ${repo}" && exit 1; }
+                fi
+            done
+        done
+    done < "${REPO_ENABLED_LIST_FILE}"
+    report_step_done "Enabled AlmaLinux repositories that were before the migration"
+    save_status_of_stage "enable_repos"
+}
+
 # Prints control type and version.
 get_panel_info() {
     local panel_type=''
@@ -311,6 +379,18 @@ assert_supported_filesystem() {
         exit 1
     fi
     save_status_of_stage "assert_supported_filesystem"
+}
+
+assert_dnf_plugins_core() {
+    if get_status_of_stage "assert_dnf_plugins_core"; then
+        return 0
+    fi
+
+    if ! rpm -q dnf-plugins-core >/dev/null; then
+        report_step_error "Please install dnf-plugins-core package"
+        exit 1
+    fi
+    save_status_of_stage "assert_dnf_plugins_core"
 }
 
 # Returns a latest almalinux-release RPM package download URL.
@@ -1142,6 +1222,8 @@ main() {
     #os_version="${os_version:0:1}"
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
     assert_supported_filesystem
+    assert_dnf_plugins_core
+    get_enabled_repos
 
     read -r panel_type panel_version < <(get_panel_info)
     assert_supported_panel "${panel_type}" "${panel_version}"
@@ -1197,6 +1279,7 @@ main() {
 
     backup_alternatives
     reset_wrong_module_streams
+    enable_repos "${os_version}"
     distro_sync "${os_version}"
     restore_module_streams
     restore_alternatives
