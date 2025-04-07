@@ -81,8 +81,18 @@ module_list_installed=""
 is_container=0
 
 setup_log_files() {
-    exec > >(tee /var/log/almalinux-deploy.log)
-    exec 5> /var/log/almalinux-deploy.debug.log
+    local date_time_stamp
+    date_time_stamp="$(date -u '+%Y%m%d%H%M%S')"
+    local log_file=/var/log/almalinux-deploy.log
+    local debug_log_file=/var/log/almalinux-deploy.debug.log
+
+    [[ -f ${log_file} ]] && \
+        mv -f ${log_file} "${log_file}.${date_time_stamp}"
+    [[ -f ${debug_log_file} ]] && \
+        mv -f ${debug_log_file} "${debug_log_file}.${date_time_stamp}"
+
+    exec > >(tee ${log_file})
+    exec 5> ${debug_log_file}
     BASH_XTRACEFD=5
 }
 
