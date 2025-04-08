@@ -20,6 +20,8 @@ ALT_DIR="/etc/alternatives"
 MINIMAL_SUPPORTED_VERSION='8.4'
 VERSION='0.1.13'
 DOWNGRADE='NO'
+REPO_URL=https://repo.almalinux.org
+LOCAL_REPO='NO'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -83,10 +85,9 @@ EXCLUDE_PKGS=
 module_list_enabled=""
 module_list_installed=""
 is_container=0
+date_time_stamp="$(date -u '+%Y%m%d%H%M%S')"
 
 setup_log_files() {
-    local date_time_stamp
-    date_time_stamp="$(date -u '+%Y%m%d%H%M%S')"
     local log_file=/var/log/almalinux-deploy.log
     local debug_log_file=/var/log/almalinux-deploy.debug.log
 
@@ -174,6 +175,8 @@ show_usage() {
     echo '  -f , --full                             perform yum upgrade to 8.5 if necessary'
     echo '  -d , --downgrade                        option to allow downgrade from CentOS Stream'
     echo '  -v , --version                          print version information and exit'
+    echo '  -l=URL , --local-repo=URL               use AlmaLinux local repositories at URL, like http://mirror.example.com'
+    echo '                                          in case if migrated system does not have internet access'
     echo '  -e=pkg1*,pkg2 , --exclude=pkg1*,pkg2*   list of packages separated with comma to exclude on dnf distro-sync'
 }
 
@@ -290,6 +293,67 @@ enable_repos() {
     done < "${REPO_ENABLED_LIST_FILE}"
     report_step_done "Enabled AlmaLinux repositories that were before the migration"
     save_status_of_stage "enable_repos"
+}
+
+# Checks AlmaLinux local repositories are reachable.
+#
+# $1 - operational system type.
+# $2 - system architecture.
+check_local_repo() {
+    local -r os_version="${1:0:1}"
+    local -r arch="${2}"
+    local check_repos="BaseOS AppStream"
+
+    # Append the list of repositories to check as they will be enabled during dnf distro-sync
+    case "${os_version}" in
+      8*)
+        check_repos+=" PowerTools"
+        ;;
+      9*)
+        check_repos+=" CRB"
+        ;;
+    esac
+    # Check only if local repository URL is set
+    if [[ "${LOCAL_REPO}" == 'YES' ]]; then
+        if get_status_of_stage "check_local_repo"; then
+            return 0
+        fi
+        for check_repo in ${check_repos}; do
+            if ! curl --head --silent --fail "${REPO_URL}/almalinux/${os_version}/${check_repo}/${arch}/os/repodata/repomd.xml" > /dev/null 2>&1; then
+                report_step_error "Check AlmaLinux repository ${check_repo} is reachable"
+                exit 1
+            fi
+        done
+        report_step_done "Check AlmaLinux ${check_repos} repositories are reachable at ${REPO_URL} "
+        save_status_of_stage "check_local_repo"
+    fi
+}
+
+# Switches AlmaLinux repositories to local copy.
+#
+# $1 - operational system type.
+# $2 - system architecture.
+switch_to_local_repo() {
+    local -r os_version="${1:0:1}"
+    local -r arch="${2}"
+
+    # Switch only if local repository URL is set
+    if [[ "${LOCAL_REPO}" == 'YES' ]]; then
+        if get_status_of_stage "switch_to_local_repo"; then
+            return 0
+        fi
+
+        echo "Repository configuration files are preserved into /etc/yum.repos.d/*.repo.${date_time_stamp}"
+        while IFS= read -r -d '' repo_file; do
+            # Switch from mirrorlist to baseurl, and replace repo.almalinux.org there
+            sed --in-place=".${date_time_stamp}" -e "s|^mirrorlist=|# mirrorlist=|" \
+                -e "s|^# *baseurl=https://repo.almalinux.org/|baseurl=${REPO_URL}/|" \
+                "${repo_file}"
+        done <   <(find /etc/yum.repos.d -name 'almalinux*.repo' -print0)
+
+        report_step_done "Switch AlmaLinux repositories to ${REPO_URL}"
+        save_status_of_stage "switch_to_local_repo"
+    fi
 }
 
 # Prints control type and version.
@@ -417,7 +481,7 @@ assert_dnf_plugins_core() {
 get_release_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_RELEASE_URL:-https://repo.almalinux.org/almalinux/almalinux-release-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux/almalinux-release-latest-${os_version}.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-repos RPM package download URL.
@@ -429,7 +493,7 @@ get_release_file_url() {
 get_repos_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_REPOS_URL:-https://repo.almalinux.org/almalinux/almalinux-repos-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux/almalinux-repos-latest-${os_version}.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-gpg-keys RPM package download URL.
@@ -441,7 +505,7 @@ get_repos_file_url() {
 get_gpg_keys_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_REPOS_URL:-https://repo.almalinux.org/almalinux/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
 }
 
 # Downloads and installs the AlmaLinux public PGP key.
@@ -454,8 +518,7 @@ install_rpm_pubkey() {
     fi
     local -r tmp_dir="${1}"
     local -r os_version="${2:0:1}"
-    local -r ALMA_PUBKEY_URL="https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux-${os_version}"
-    local -r pubkey_url="${ALMA_PUBKEY_URL:-https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux}"
+    local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/almalinux/RPM-GPG-KEY-AlmaLinux-${os_version}}"
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
     local -r step='Download RPM-GPG-KEY-AlmaLinux'
     local output
@@ -1216,7 +1279,7 @@ remove_redhat_repo_files() {
     local repo
     for repo in "${REDHAT_REPO_FILES[@]}"; do
         if [ -e "${repo}" ]; then
-            mv -f "${repo}" "${repo}.$(date -u '+%s')"
+            mv -f "${repo}" "${repo}.${date_time_stamp}"
         fi
     done
     report_step_done "Remove RHEL repositories' files if any"
@@ -1242,6 +1305,7 @@ main() {
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
     assert_supported_filesystem
     assert_dnf_plugins_core
+    check_local_repo "${os_version}" "${arch}"
     get_enabled_repos
 
     read -r panel_type panel_version < <(get_panel_info)
@@ -1298,6 +1362,7 @@ main() {
 
     backup_alternatives
     reset_wrong_module_streams
+    switch_to_local_repo "${os_version}" "${arch}"
     enable_repos "${os_version}"
     distro_sync "${os_version}"
     restore_module_streams
@@ -1338,6 +1403,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         -e=* | --exclude=*)
             EXCLUDE_PKGS="${opt#*=}"
+            shift
+            ;;
+        -l=* | --local-repo=*)
+            LOCAL_REPO='YES'
+            REPO_URL="${opt#*=}"
             shift
             ;;
         *)
