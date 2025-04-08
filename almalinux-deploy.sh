@@ -76,6 +76,10 @@ repo_map["rt"]="rt rhel-8-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-rpms rhel-9-fo
 repo_map["sap"]="sap rhel-8-for-x86_64-sap-netweaver-e4s-rpms rhel-8-for-x86_64-sap-netweaver-eus-rpms rhel-8-for-x86_64-sap-netweaver-rpms rhel-9-for-x86_64-sap-netweaver-e4s-rpms rhel-9-for-x86_64-sap-netweaver-eus-rpms rhel-9-for-x86_64-sap-netweaver-rpms"
 repo_map["saphana"]="saphana rhel-8-for-x86_64-sap-solutions-e4s-rpms rhel-8-for-x86_64-sap-solutions-eus-rpms rhel-8-for-x86_64-sap-solutions-rpms rhel-9-for-x86_64-sap-solutions-e4s-rpms rhel-9-for-x86_64-sap-solutions-eus-rpms rhel-9-for-x86_64-sap-solutions-rpms"
 
+# List of packages separated with comma to be excluded on dnf distro-sync
+# like, --exclude=pkg1*,pkg2*
+EXCLUDE_PKGS=
+
 module_list_enabled=""
 module_list_installed=""
 is_container=0
@@ -166,10 +170,11 @@ report_step_error() {
 show_usage() {
     echo -e 'Migrates an EL system to AlmaLinux\n'
     echo -e 'Usage: almalinux-deploy.sh [OPTION]...\n'
-    echo '  -h, --help           show this message and exit'
-    echo '  -f, --full           perform yum upgrade to 8.5 if necessary'
-    echo '  -d, --downgrade      option to allow downgrade from CentOS Stream'
-    echo '  -v, --version        print version information and exit'
+    echo '  -h , --help                             show this message and exit'
+    echo '  -f , --full                             perform yum upgrade to 8.5 if necessary'
+    echo '  -d , --downgrade                        option to allow downgrade from CentOS Stream'
+    echo '  -v , --version                          print version information and exit'
+    echo '  -e=pkg1*,pkg2 , --exclude=pkg1*,pkg2*   list of packages separated with comma to exclude on dnf distro-sync'
 }
 
 # Terminates the program if it is not run with root privileges
@@ -845,6 +850,10 @@ distro_sync() {
     if [ $is_container -eq 1 ]; then
         exclude_pkgs+="filesystem*,grub*"
     fi
+    # append excludes list with user's custom packages
+    if [ -n "${EXCLUDE_PKGS}" ]; then
+        exclude_pkgs+=",${EXCLUDE_PKGS}"
+    fi
     dnf distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
         ret_code=${?}
         report_step_error "${step}. Exit code: ${ret_code}"
@@ -1326,6 +1335,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         -t | --tests)
             exit 0
+            ;;
+        -e=* | --exclude=*)
+            EXCLUDE_PKGS="${opt#*=}"
+            shift
             ;;
         *)
             echo "Error: unknown option ${opt}" >&2
