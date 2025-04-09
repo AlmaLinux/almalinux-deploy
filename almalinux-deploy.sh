@@ -1417,6 +1417,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         -l=* | --local-repo=*)
             LOCAL_REPO='YES'
             REPO_URL="${opt#*=}"
+            REPO_URL="${REPO_URL%/}" # remove trailing slash
             shift
             ;;
         *)
