@@ -20,7 +20,7 @@ ALT_DIR="/etc/alternatives"
 MINIMAL_SUPPORTED_VERSION='8.4'
 VERSION='0.1.13'
 DOWNGRADE='NO'
-REPO_URL=https://repo.almalinux.org
+REPO_URL=https://repo.almalinux.org/almalinux
 LOCAL_REPO='NO'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
@@ -175,7 +175,7 @@ show_usage() {
     echo '  -f , --full                             perform yum upgrade to 8.5 if necessary'
     echo '  -d , --downgrade                        option to allow downgrade from CentOS Stream'
     echo '  -v , --version                          print version information and exit'
-    echo '  -l=URL , --local-repo=URL               use AlmaLinux local repositories at URL, like http://mirror.example.com'
+    echo '  -l=URL/path , --local-repo=URL/path     use AlmaLinux local repositories at URL/path, like http://mirror.example.com/almalinux'
     echo '                                          in case if migrated system does not have internet access'
     echo '  -e=pkg1*,pkg2 , --exclude=pkg1*,pkg2*   list of packages separated with comma to exclude on dnf distro-sync'
 }
@@ -303,6 +303,7 @@ check_local_repo() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
     local check_repos="BaseOS AppStream"
+    local check_links="almalinux-release-latest-${os_version}.${arch}.rpm RPM-GPG-KEY-AlmaLinux-${os_version}"
 
     # Append the list of repositories to check as they will be enabled during dnf distro-sync
     case "${os_version}" in
@@ -318,13 +319,21 @@ check_local_repo() {
         if get_status_of_stage "check_local_repo"; then
             return 0
         fi
+        # Check metadata is reachable for specific repositories
         for check_repo in ${check_repos}; do
-            if ! curl --head --silent --fail "${REPO_URL}/almalinux/${os_version}/${check_repo}/${arch}/os/repodata/repomd.xml" > /dev/null 2>&1; then
+            if ! curl --head --silent --fail "${REPO_URL}/${os_version}/${check_repo}/${arch}/os/repodata/repomd.xml" > /dev/null 2>&1; then
                 report_step_error "Check AlmaLinux repository ${check_repo} is reachable"
                 exit 1
             fi
         done
-        report_step_done "Check AlmaLinux ${check_repos} repositories are reachable at ${REPO_URL} "
+        # Check AlmaLinux release package and GPG public key symlinks are reachable
+        for check_link in ${check_links}; do
+            if ! curl --head --silent --fail "${REPO_URL}/${check_link}" > /dev/null 2>&1; then
+                report_step_error "Check ${check_link} symlink is reachable"
+                exit 1
+            fi
+        done
+        report_step_done "Check AlmaLinux core stuff is reachable at ${REPO_URL} "
         save_status_of_stage "check_local_repo"
     fi
 }
@@ -347,7 +356,7 @@ switch_to_local_repo() {
         while IFS= read -r -d '' repo_file; do
             # Switch from mirrorlist to baseurl, and replace repo.almalinux.org there
             sed --in-place=".${date_time_stamp}" -e "s|^mirrorlist=|# mirrorlist=|" \
-                -e "s|^# *baseurl=https://repo.almalinux.org/|baseurl=${REPO_URL}/|" \
+                -e "s|^# *baseurl=https://repo.almalinux.org/almalinux/|baseurl=${REPO_URL}/|" \
                 "${repo_file}"
         done <   <(find /etc/yum.repos.d -name 'almalinux*.repo' -print0)
 
@@ -481,7 +490,7 @@ assert_dnf_plugins_core() {
 get_release_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux/almalinux-release-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux-release-latest-${os_version}.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-repos RPM package download URL.
@@ -493,7 +502,7 @@ get_release_file_url() {
 get_repos_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux/almalinux-repos-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-repos-latest-${os_version}.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-gpg-keys RPM package download URL.
@@ -505,7 +514,7 @@ get_repos_file_url() {
 get_gpg_keys_file_url() {
     local -r os_version="${1:0:1}"
     local -r arch="${2}"
-    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
+    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
 }
 
 # Downloads and installs the AlmaLinux public PGP key.
@@ -518,7 +527,7 @@ install_rpm_pubkey() {
     fi
     local -r tmp_dir="${1}"
     local -r os_version="${2:0:1}"
-    local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/almalinux/RPM-GPG-KEY-AlmaLinux-${os_version}}"
+    local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/RPM-GPG-KEY-AlmaLinux-${os_version}}"
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
     local -r step='Download RPM-GPG-KEY-AlmaLinux'
     local output
