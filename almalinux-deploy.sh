@@ -1370,8 +1370,8 @@ main() {
     esac
 
     backup_alternatives
-    reset_wrong_module_streams
     switch_to_local_repo "${os_version}" "${arch}"
+    reset_wrong_module_streams
     enable_repos "${os_version}"
     distro_sync "${os_version}"
     restore_module_streams
