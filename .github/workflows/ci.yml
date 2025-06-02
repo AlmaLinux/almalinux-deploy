@@ -51,6 +51,8 @@ jobs:
       matrix:
         # OSs image:tag
         image_tag:
+          - "redhat/ubi10:latest"
+          - "quay.io/centos/centos:stream10"
           - "oraclelinux:9"
           - "rockylinux/rockylinux:9"
           - "quay.io/centos/centos:stream9"
@@ -231,6 +233,7 @@ jobs:
           run_arch=${platform#linux/}
           al8_gpg_pubkey='3abb34f8-5ffd890e'
           al9_gpg_pubkey='b86b3716-61e69f29'
+          al10_gpg_pubkey='c2a1e572-668fe8ef'
 
           echo "Testing AlmaLinux on ${platform}:"
           arch=$( docker run --platform=${platform} ${{ steps.build-container.outputs.digest }} /bin/bash -c "uname -m" )
@@ -249,10 +252,10 @@ jobs:
             echo " - ${almalinux_release} did not match" && false
           fi
 
-          gpg_pubkey=$( docker run --platform=${platform} ${{ steps.build-container.outputs.digest }} /bin/bash -c "rpm -q gpg-pubkey | egrep -e '${al8_gpg_pubkey}|${al9_gpg_pubkey}'" )
+          gpg_pubkey=$( docker run --platform=${platform} ${{ steps.build-container.outputs.digest }} /bin/bash -c "rpm -q gpg-pubkey | grep -E '${al8_gpg_pubkey}|${al9_gpg_pubkey}|${al10_gpg_pubkey}'" )
           if [ -n "${gpg_pubkey}" ]; then
             echo " + GPG KEY(s) installed:"
             echo "${gpg_pubkey}"
           else
-            echo " - None of ${al8_gpg_pubkey} or ${al9_gpg_pubkey} GPG KEY(s) were installed." && false
+            echo " - None of ${al8_gpg_pubkey}, ${al9_gpg_pubkey} or ${al10_gpg_pubkey} GPG KEY(s) were installed." && false
           fi

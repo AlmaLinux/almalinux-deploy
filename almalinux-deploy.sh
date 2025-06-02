@@ -202,7 +202,7 @@ assert_secureboot_disabled() {
 
 # Prints a system architecture.
 get_system_arch() {
-    uname -i
+    uname -m
 }
 
 # Reads a variable value from /etc/os-release.
@@ -267,7 +267,7 @@ get_enabled_repos() {
 #
 # $1 - operational system type.
 enable_repos() {
-    local -r os_version="${1:0:1}"
+    local -r os_version="${1%%.*}"
     if get_status_of_stage "enable_repos"; then
         return 0
     fi
@@ -300,7 +300,7 @@ enable_repos() {
 # $1 - operational system type.
 # $2 - system architecture.
 check_local_repo() {
-    local -r os_version="${1:0:1}"
+    local -r os_version="${1%%.*}"
     local -r arch="${2}"
     local check_repos="BaseOS AppStream"
     local check_links="almalinux-release-latest-${os_version}.${arch}.rpm RPM-GPG-KEY-AlmaLinux-${os_version}"
@@ -310,7 +310,7 @@ check_local_repo() {
       8*)
         check_repos+=" PowerTools"
         ;;
-      9*)
+      9*|10*)
         check_repos+=" CRB"
         ;;
     esac
@@ -343,7 +343,7 @@ check_local_repo() {
 # $1 - operational system type.
 # $2 - system architecture.
 switch_to_local_repo() {
-    local -r os_version="${1:0:1}"
+    local -r os_version="${1%%.*}"
     local -r arch="${2}"
 
     # Switch only if local repository URL is set
@@ -391,7 +391,7 @@ assert_supported_system() {
         return 0
     fi
     local -r os_type="${1}"
-    local -r os_version="${2:0:1}"
+    local -r os_version="${2%%.*}"
     local -r arch="${3}"
     case "${arch}" in
         x86_64|aarch64|ppc64le|s390x)
@@ -401,7 +401,7 @@ assert_supported_system() {
             exit 1
             ;;
     esac
-    if [[ ${os_version} -lt ${MINIMAL_SUPPORTED_VERSION:0:1} ]]; then
+    if [[ ${os_version} -lt ${MINIMAL_SUPPORTED_VERSION%%.*} ]]; then
         report_step_error "Check EL${os_version} is supported"
         exit 1
     fi
@@ -488,7 +488,7 @@ assert_dnf_plugins_core() {
 #
 # Prints almalinux-release RPM package download URL.
 get_release_file_url() {
-    local -r os_version="${1:0:1}"
+    local -r os_version="${1%%.*}"
     local -r arch="${2}"
     echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux-release-latest-${os_version}.${arch}.rpm}"
 }
@@ -500,7 +500,7 @@ get_release_file_url() {
 #
 # Prints almalinux-release RPM package download URL.
 get_repos_file_url() {
-    local -r os_version="${1:0:1}"
+    local -r os_version="${1%%.*}"
     local -r arch="${2}"
     echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-repos-latest-${os_version}.${arch}.rpm}"
 }
@@ -512,7 +512,7 @@ get_repos_file_url() {
 #
 # Prints almalinux-gpg-keys RPM package download URL.
 get_gpg_keys_file_url() {
-    local -r os_version="${1:0:1}"
+    local -r os_version="${1%%.*}"
     local -r arch="${2}"
     echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
 }
@@ -526,7 +526,7 @@ install_rpm_pubkey() {
         return 0
     fi
     local -r tmp_dir="${1}"
-    local -r os_version="${2:0:1}"
+    local -r os_version="${2%%.*}"
     local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/RPM-GPG-KEY-AlmaLinux-${os_version}}"
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
     local -r step='Download RPM-GPG-KEY-AlmaLinux'
@@ -676,13 +676,13 @@ assert_compatible_os_version() {
     alma_version=$(rpm -qp --queryformat '%{version}' "${release_path}")
 
     if [[ "$(get_os_release_var 'NAME')" != 'CentOS Stream' ]]; then
-	      if [[ "${os_version:0:1}" -lt "${MINIMAL_SUPPORTED_VERSION:0:1}" ]] && [[ "${os_version:2:3}" -lt "${MINIMAL_SUPPORTED_VERSION:2:3}" ]]; then
+	      if [[ "${os_version%%.*}" -lt "${MINIMAL_SUPPORTED_VERSION%%.*}" ]] && [[ "${os_version#*.}" -lt "${MINIMAL_SUPPORTED_VERSION#*.}" ]]; then
           report_step_error "Please upgrade your OS from ${os_version} to" \
           "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
           exit 1
         fi
     fi
-    if [[ "${os_version:0:1}" -lt "${alma_version:0:1}" ]] && [[ "${os_version:2:3}" -gt "${alma_version:2:3}" ]]; then
+    if [[ "${os_version%%.*}" -lt "${alma_version%%.*}" ]] && [[ "${os_version#*.}" -gt "${alma_version#*.}" ]]; then
         report_step_error "Version of your OS ${os_version} is not supported yet"
         exit 1
     fi
@@ -854,7 +854,7 @@ migrate_from_centos() {
     fi
     local -r release_path="${1}"
     case "${os_version}" in
-      9*)
+      9*|10*)
         local -r repos_path="${2}"
         local -r gpg_keys_path="${3}"
         ;;
@@ -865,7 +865,7 @@ migrate_from_centos() {
     remove_not_needed_redhat_dirs
     install_almalinux_release_package "${release_path}"
     case "${os_version}" in
-      9*)
+      9*|10*)
         install_almalinux_repos_package "${repos_path}"
         install_almalinux_gpg_keys_package "${gpg_keys_path}"
         ;;
@@ -901,7 +901,7 @@ distro_sync() {
       8*)
         local dnf_repos="--enablerepo=powertools"
         ;;
-      9*)
+      9*|10*)
         local dnf_repos="--enablerepo=crb"
         ;;
     esac
@@ -1310,7 +1310,7 @@ main() {
     os_type="$(get_os_release_var 'ID')"
     os_version="$(get_os_version "${os_type}")"
     #os_version="$(get_os_release_var 'VERSION_ID')"
-    #os_version="${os_version:0:1}"
+    #os_version="${os_version%%.*}"
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
     assert_supported_filesystem
     assert_dnf_plugins_core
@@ -1354,12 +1354,16 @@ main() {
           8*)
             migrate_from_centos "${release_path}"
             ;;
-          9*)
+          9*|10*)
             repos_url=$(get_repos_file_url "${os_version}" "${arch}")
             repos_path=$(download_repos_files "${tmp_dir}" "${repos_url}")
             gpg_keys_url=$(get_gpg_keys_file_url "${os_version}" "${arch}")
             gpg_keys_path=$(download_gpg_keys_files "${tmp_dir}" "${gpg_keys_url}")
             migrate_from_centos "${release_path}" "${repos_path}" "${gpg_keys_path}"
+            ;;
+          *)
+            report_step_error "Migrate ${os_version}: not supported"
+            exit 1
             ;;
         esac
         ;;
