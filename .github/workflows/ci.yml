@@ -53,6 +53,7 @@ jobs:
         image_tag:
           - "redhat/ubi10:latest"
           - "quay.io/centos/centos:stream10"
+          - "rockylinux/rockylinux:10"
           - "oraclelinux:9"
           - "rockylinux/rockylinux:9"
           - "quay.io/centos/centos:stream9"
