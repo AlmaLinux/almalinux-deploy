@@ -459,13 +459,16 @@ EOF
 }
 
 assert_supported_filesystem() {
+    local -r os_version="${1%%.*}"
     if get_status_of_stage "assert_supported_filesystem"; then
         return 0
     fi
     local result
     if result=$(df -Th | awk '{print $2}' | grep btrfs); then
-        report_step_error "${result} is not supported filesystem"
-        exit 1
+        if [[ "${os_version}" -lt "10" ]]; then
+            report_step_error "${result} is not supported filesystem for EL ${os_version}"
+            exit 1
+        fi
     fi
     save_status_of_stage "assert_supported_filesystem"
 }
@@ -1313,7 +1316,7 @@ main() {
     #os_version="$(get_os_release_var 'VERSION_ID')"
     #os_version="${os_version%%.*}"
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
-    assert_supported_filesystem
+    assert_supported_filesystem "${os_version}"
     assert_dnf_plugins_core
     check_local_repo "${os_version}" "${arch}"
     get_enabled_repos
