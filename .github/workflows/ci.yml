@@ -9,7 +9,7 @@ on:
     branches: [ master ]
 
   schedule:
-    # run every Monmday at 03:00 UTC
+    # run every Monday at 03:00 UTC
     - cron:  '00 03 * * 1'
 
   # Allows you to run this workflow manually from the Actions tab
@@ -51,6 +51,7 @@ jobs:
       matrix:
         # OSs image:tag
         image_tag:
+          - "oraclelinux:10"
           - "redhat/ubi10:latest"
           - "quay.io/centos/centos:stream10"
           - "rockylinux/rockylinux:10"
@@ -91,6 +92,12 @@ jobs:
           platform: linux/s390x
         - image_tag: "virtuozzo/vzlinux8:latest"
           platform: linux/arm64
+
+          # Oracle Linux 10
+        - image_tag: "oraclelinux:10"
+          platform: linux/ppc64le
+        - image_tag: "oraclelinux:10"
+          platform: linux/s390x
 
           # Oracle Linux 9
         - image_tag: "oraclelinux:9"
