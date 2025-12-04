@@ -47,7 +47,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "axtsn-client-tools" "axtsn-setup" "dnf-axtu-plugin" \
                 "NetworkManager-config-connectivity-miraclelinux" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
-                "oraclelinux-release-el9" "python3-gobject-base-noarch" \
+                "oraclelinux-release-el9" "oraclelinux-release-el10" "python3-gobject-base-noarch" \
                 "redhat-release" "redhat-release-eula" \
                 "rocky-release" "rocky-gpg-keys" "rocky-repos" \
                 "rocky-obsolete-packages" "libblockdev-btrfs" \
@@ -63,21 +63,21 @@ REPO_ENABLED_LIST_FILE=/var/run/almalinux-deploy-statuses/repo_list_enabled
 # Map AlmaLinux to various EL repos
 declare -A repo_map
 # AlmaLinux CentOS Rocky MiracleLinux Virtuozzo OracleLinux RedHat
-repo_map["extras"]="extras extras-common 9-latest-extras ol8_addons ol9_addons"
+repo_map["extras"]="extras extras-common 9-latest-extras 10-latest-extras ol8_addons ol9_addons ol10_addons"
 # High Availability repository on 8
 repo_map["ha"]="ha 8-latest-HighAvailability rhel-8-for-x86_64-highavailability-e4s-rpms rhel-8-for-x86_64-highavailability-eus-rpms rhel-8-for-x86_64-highavailability-rpms"
 # High Availability repository on 9
-repo_map["highavailability"]="highavailability 9-latest-HighAvailability ha rhel-9-for-x86_64-highavailability-e4s-rpms rhel-9-for-x86_64-highavailability-eus-rpms rhel-9-for-x86_64-highavailability-rpms"
+repo_map["highavailability"]="highavailability 9-latest-HighAvailability 10-latest-HighAvailability ha rhel-9-for-x86_64-highavailability-e4s-rpms rhel-9-for-x86_64-highavailability-eus-rpms rhel-9-for-x86_64-highavailability-rpms rhel-10-for-x86_64-highavailability-e4s-rpms rhel-10-for-x86_64-highavailability-eus-rpms rhel-10-for-x86_64-highavailability-rpms"
 repo_map["nfv"]="nfv rhel-9-for-x86_64-nfv-e4s-rpms rhel-9-for-x86_64-nfv-rpms"
 repo_map["plus"]="plus"
 # PowerTools repository on 8
 repo_map["powertools"]="powertools 8-latest-PowerTools ol8_codeready_builder ol8_distro_builder codeready-builder-for-rhel-8-x86_64-eus-rpms codeready-builder-for-rhel-8-x86_64-rpms ubi-8-codeready-builder ubi-8-codeready-builder-rpms"
 # PowerTools repository on 9
-repo_map["crb"]="crb 9-latest-PowerTools powertools ol9_codeready_builder ol9_distro_builder codeready-builder-for-rhel-9-x86_64-eus-rpms codeready-builder-for-rhel-9-x86_64-rpms ubi-9-codeready-builder-rpms"
-repo_map["resilientstorage"]="resilientstorage resilient-storage 9-latest-ResilientStorage rhel-8-for-x86_64-resilientstorage-eus-rpms rhel-9-for-x86_64-resilientstorage-eus-rpms rhel-8-for-x86_64-resilientstorage-rpms rhel-9-for-x86_64-resilientstorage-rpms"
-repo_map["rt"]="rt rhel-8-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-e4s-rpms "
-repo_map["sap"]="sap rhel-8-for-x86_64-sap-netweaver-e4s-rpms rhel-8-for-x86_64-sap-netweaver-eus-rpms rhel-8-for-x86_64-sap-netweaver-rpms rhel-9-for-x86_64-sap-netweaver-e4s-rpms rhel-9-for-x86_64-sap-netweaver-eus-rpms rhel-9-for-x86_64-sap-netweaver-rpms"
-repo_map["saphana"]="saphana rhel-8-for-x86_64-sap-solutions-e4s-rpms rhel-8-for-x86_64-sap-solutions-eus-rpms rhel-8-for-x86_64-sap-solutions-rpms rhel-9-for-x86_64-sap-solutions-e4s-rpms rhel-9-for-x86_64-sap-solutions-eus-rpms rhel-9-for-x86_64-sap-solutions-rpms"
+repo_map["crb"]="crb 9-latest-PowerTools 10-latest-PowerTools powertools ol9_codeready_builder ol9_distro_builder ol10_codeready_builder ol10_distro_builder codeready-builder-for-rhel-9-x86_64-eus-rpms codeready-builder-for-rhel-9-x86_64-rpms ubi-9-codeready-builder-rpms codeready-builder-for-rhel-10-x86_64-eus-rpms codeready-builder-for-rhel-10-x86_64-rpms ubi-10-codeready-builder-rpms"
+repo_map["resilientstorage"]="resilientstorage resilient-storage 9-latest-ResilientStorage 10-latest-ResilientStorage rhel-8-for-x86_64-resilientstorage-eus-rpms rhel-9-for-x86_64-resilientstorage-eus-rpms rhel-10-for-x86_64-resilientstorage-eus-rpms rhel-8-for-x86_64-resilientstorage-rpms rhel-9-for-x86_64-resilientstorage-rpms rhel-10-for-x86_64-resilientstorage-rpms"
+repo_map["rt"]="rt rhel-8-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-rpms rhel-9-for-x86_64-rt-e4s-rpms rhel-10-for-x86_64-rt-rpms rhel-10-for-x86_64-rt-e4s-rpms"
+repo_map["sap"]="sap rhel-8-for-x86_64-sap-netweaver-e4s-rpms rhel-8-for-x86_64-sap-netweaver-eus-rpms rhel-8-for-x86_64-sap-netweaver-rpms rhel-9-for-x86_64-sap-netweaver-e4s-rpms rhel-9-for-x86_64-sap-netweaver-eus-rpms rhel-9-for-x86_64-sap-netweaver-rpms rhel-10-for-x86_64-sap-netweaver-e4s-rpms rhel-10-for-x86_64-sap-netweaver-eus-rpms rhel-10-for-x86_64-sap-netweaver-rpms"
+repo_map["saphana"]="saphana rhel-8-for-x86_64-sap-solutions-e4s-rpms rhel-8-for-x86_64-sap-solutions-eus-rpms rhel-8-for-x86_64-sap-solutions-rpms rhel-9-for-x86_64-sap-solutions-e4s-rpms rhel-9-for-x86_64-sap-solutions-eus-rpms rhel-9-for-x86_64-sap-solutions-rpms rhel-10-for-x86_64-sap-solutions-e4s-rpms rhel-10-for-x86_64-sap-solutions-eus-rpms rhel-10-for-x86_64-sap-solutions-rpms"
 
 # List of packages separated with comma to be excluded on dnf distro-sync
 # like, --exclude=pkg1*,pkg2*
@@ -459,13 +459,16 @@ EOF
 }
 
 assert_supported_filesystem() {
+    local -r os_version="${1%%.*}"
     if get_status_of_stage "assert_supported_filesystem"; then
         return 0
     fi
     local result
     if result=$(df -Th | awk '{print $2}' | grep btrfs); then
-        report_step_error "${result} is not supported filesystem"
-        exit 1
+        if [[ "${os_version}" -lt "10" ]]; then
+            report_step_error "${result} is not supported filesystem for EL ${os_version}"
+            exit 1
+        fi
     fi
     save_status_of_stage "assert_supported_filesystem"
 }
@@ -985,6 +988,7 @@ grub_update() {
             grub2-mkconfig -o /etc/grub2.cfg
         fi
     fi
+    report_step_done "Update GRUB configuration"
     save_status_of_stage "grub_update"
 }
 
@@ -1008,6 +1012,7 @@ that won't boot in Secure Boot mode anymore[0m:\n"
         echo "If you don't need them, you can remove them by using the 'dnf remove" \
             "${output}' command"
     fi
+    report_step_done "Check custom kernel"
     save_status_of_stage "check_custom_kernel"
 }
 
@@ -1313,7 +1318,7 @@ main() {
     #os_version="$(get_os_release_var 'VERSION_ID')"
     #os_version="${os_version%%.*}"
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
-    assert_supported_filesystem
+    assert_supported_filesystem "${os_version}"
     assert_dnf_plugins_core
     check_local_repo "${os_version}" "${arch}"
     get_enabled_repos
