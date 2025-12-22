@@ -1270,9 +1270,12 @@ subscription_manager_unregister() {
         return 0
     fi
     if subscription-manager status >/dev/null 2>&1; then
-        subscription-manager remove --all
         subscription-manager unregister
         subscription-manager clean
+		sed -i 's/^enabled=.*/enabled=0/' /etc/dnf/plugins/subscription-manager.conf
+		dnf remove -y subscription-manager
+		dnf clean all
+		rm -rf /var/cache/dnf
     fi
     report_step_done "Red Hat Subscription Manager deactivated"
     save_status_of_stage "subscription_manager_unregister"
