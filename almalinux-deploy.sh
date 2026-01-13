@@ -1266,18 +1266,21 @@ disable_redhat_dnf_plugins() {
 }
 
 subscription_manager_unregister() {
+    local -r os_version="${1%%.*}"
     if get_status_of_stage "subscription_manager_unregister"; then
-        return 0
+         return 0
     fi
     if subscription-manager status >/dev/null 2>&1; then
+        if [[ "${os_version}" -lt "10" ]]; then
+            subscription-manager remove --all
+        fi
         subscription-manager unregister
         subscription-manager clean
-		sed -i 's/^enabled=.*/enabled=0/' /etc/dnf/plugins/subscription-manager.conf
-		dnf remove -y subscription-manager
-		dnf clean all
-		rm -rf /var/cache/dnf
+        test -e /etc/dnf/plugins/subscription-manager.conf && \
+            sed -i 's/^enabled=.*/enabled=0/' /etc/dnf/plugins/subscription-manager.conf || \
+            true
     fi
-    report_step_done "Red Hat Subscription Manager deactivated"
+	report_step_done "Red Hat Subscription Manager deactivated"
     save_status_of_stage "subscription_manager_unregister"
 }
 
@@ -1354,9 +1357,9 @@ main() {
         backup_issue
 
         if [[ "${os_type}" == "rhel" ]]; then
-            subscription_manager_unregister
-            remove_redhat_rhsm_rpms
-            remove_redhat_repo_files
+             subscription_manager_unregister "${os_version}"
+             remove_redhat_rhsm_rpms
+             remove_redhat_repo_files
         fi
 
         case "${os_version}" in
