@@ -1268,7 +1268,7 @@ disable_redhat_dnf_plugins() {
 subscription_manager_unregister() {
     local -r os_version="${1%%.*}"
     if get_status_of_stage "subscription_manager_unregister"; then
-         return 0
+        return 0
     fi
     if subscription-manager status >/dev/null 2>&1; then
         if [[ "${os_version}" -lt "10" ]]; then
