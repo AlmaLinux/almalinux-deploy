@@ -1225,6 +1225,7 @@ add_efi_boot_record() {
 
 
 reinstall_secure_boot_packages() {
+    local -r os_version="${1%%.*}"
     if get_status_of_stage "reinstall_secure_boot_packages"; then
         return 0
     fi
@@ -1235,7 +1236,18 @@ reinstall_secure_boot_packages() {
                 yum reinstall "${pkg}" -y
             fi
         done
-        kernel_package="$(rpm -qf "$(grubby --default-kernel)")"
+        kernel_path="$(grubby --default-kernel)"
+        # If migrating to AlmaLinux 10+ with BTRFS, handle subvolume paths
+        if [[ "${os_version}" -ge "10" ]] && [[ "$(findmnt -n -o FSTYPE /)" == "btrfs" ]]; then
+            # Cache btrfs subvolume list to avoid multiple expensive calls
+            local btrfs_subvols
+            btrfs_subvols="$(btrfs subvolume list /)"
+            # If no /boot subvolume exists but /root subvolume does, adjust kernel path
+            if ! grep -q 'boot' <<< "$btrfs_subvols" && grep -q 'root' <<< "$btrfs_subvols"; then
+                kernel_path="${kernel_path/\/root/}"
+            fi
+        fi
+        kernel_package="$(rpm -qf "$kernel_path")"
         if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
             yum reinstall "${kernel_package}" -y
         fi
@@ -1398,7 +1410,7 @@ main() {
     if [ $is_container -eq 0 ]; then
         install_kernel
         grub_update
-        reinstall_secure_boot_packages
+        reinstall_secure_boot_packages "${os_version}"
         add_efi_boot_record
     fi
     check_custom_kernel
