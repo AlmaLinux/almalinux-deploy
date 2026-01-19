@@ -60,13 +60,13 @@ jobs:
           - "quay.io/centos/centos:stream9"
           - "redhat/ubi9:latest"
           - "virtuozzo/vzlinux9:latest"
-          - "pastalian/miraclelinux:9"
+          - "miraclelinux/miraclelinux:9-latest"
           - "oraclelinux:8"
           - "rockylinux/rockylinux:8"
           - "quay.io/centos/centos:stream8"
           - "redhat/ubi8:latest"
           - "virtuozzo/vzlinux8:latest"
-          - "pastalian/miraclelinux:8"
+          - "miraclelinux/miraclelinux:8-latest"
 
         # Platforms list
         platform:
@@ -122,19 +122,19 @@ jobs:
           platform: linux/s390x
 
           # MIRACLE LINUX 9
-        - image_tag: "pastalian/miraclelinux:9"
+        - image_tag: "miraclelinux/miraclelinux:9-latest"
           platform: linux/ppc64le
-        - image_tag: "pastalian/miraclelinux:9"
+        - image_tag: "miraclelinux/miraclelinux:9-latest"
           platform: linux/s390x
-        - image_tag: "pastalian/miraclelinux:9"
+        - image_tag: "miraclelinux/miraclelinux:9-latest"
           platform: linux/arm64
 
           # MIRACLE LINUX 8
-        - image_tag: "pastalian/miraclelinux:8"
+        - image_tag: "miraclelinux/miraclelinux:8-latest"
           platform: linux/ppc64le
-        - image_tag: "pastalian/miraclelinux:8"
+        - image_tag: "miraclelinux/miraclelinux:8-latest"
           platform: linux/s390x
-        - image_tag: "pastalian/miraclelinux:8"
+        - image_tag: "miraclelinux/miraclelinux:8-latest"
           platform: linux/arm64
 
     steps:
