@@ -68,6 +68,10 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 
 7. Thank you for choosing AlmaLinux!
 
+## Tip
+
+Migration with Btrfs filesystem is not supported for Oracle Linux 8 and 9
+
 ## Roadmap
 
 * [x] CentOS 8 support.
@@ -81,6 +85,8 @@ convenience to restore `dnf` to a functional state that will let you update to 8
 * [x] Plesk control panel support.
 * [x] CentOS Stream 8 downgrade support with `-d` option.
 * [x] EL9 (RHEL 9, Oracle Linux 9, Rocky Linux 9, Virtuozzo Linux 9) and CentOS Stream 9 support
+* [x] EL10 (RHEL 10, Oracle Linux 10, Rocky Linux 10) and CentOS Stream 10 support
+* [x] Btrfs support for Oracle Linux 10.0 - UEK (Unbreakable Enterprise Kernel) only
 * [ ] Cover all common scenarios with tests.
 * [ ] Add OpenNebula support to Molecule test suite.
 
