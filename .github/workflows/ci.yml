@@ -23,7 +23,7 @@ jobs:
     name: Shellcheck
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
 
@@ -35,7 +35,7 @@ jobs:
       - name: Setup Bats
         run: sudo apt-get install bats
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Test Bats
         run: bats test_almalinux-deploy.bats
 
@@ -166,13 +166,13 @@ jobs:
           docker info -f '{{ .DriverStatus }}'
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Checkout ${{ github.repository }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             almalinux-deploy.sh
@@ -226,7 +226,7 @@ jobs:
 
       - name: Build container and deploy AlmaLinux
         id: build-container
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           provenance: false
           file: "${{ github.workspace }}/Dockerfile"
