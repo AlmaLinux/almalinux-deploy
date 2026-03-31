@@ -54,6 +54,7 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages" \
                 "evolution-data-server-ui" "epel-next-release" "openssl-fips-provider" "openssl-fips-provider-so" \
                 "fips-provider-next")
+REMOVE_PKGS_EL9=("udisks2-btrfs")
 REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
 REDHAT_REPO_FILES=("/etc/yum.repos.d/redhat.repo" "/etc/yum.repos.d/ubi.repo")
 REDHAT_RHSM_RPMS=("subscription-manager" "subscription-manager-cockpit" "cockpit" "rhc")
@@ -745,6 +746,13 @@ remove_os_specific_packages_before_migration() {
     if get_status_of_stage "remove_os_specific_packages_before_migration"; then
         return 0
     fi
+    local -r os_version="${1}"
+
+    # Extend REMOVE_PKGS with EL9-specific packages if migrating EL9
+    if [[ "${os_version}" == 9* ]]; then
+        REMOVE_PKGS+=("${REMOVE_PKGS_EL9[@]}")
+    fi
+
     for i in "${!REMOVE_PKGS[@]}"; do
         if ! rpm -q "${REMOVE_PKGS[i]}" &> /dev/null; then
             # remove an erased package from the list if it isn't installed
@@ -865,7 +873,7 @@ migrate_from_centos() {
     esac
     # replace OS packages with almalinux-release
     # and OS centos-specific packages
-    remove_os_specific_packages_before_migration
+    remove_os_specific_packages_before_migration "${os_version}"
     remove_not_needed_redhat_dirs
     install_almalinux_release_package "${release_path}"
     case "${os_version}" in
@@ -1009,8 +1017,8 @@ that won't boot in Secure Boot mode anymore[0m:\n"
         # shellcheck disable=SC2001,SC2086
         echo "$output" | sed 's# #\n#'
         echo ""
-        echo "If you don't need them, you can remove them by using the 'dnf remove" \
-            "${output}' command"
+        echo "If you don't need them, you can remove them by using the command:" \
+            "sudo dnf remove $(echo "${output}" | xargs) "
     fi
     report_step_done "Check custom kernel"
     save_status_of_stage "check_custom_kernel"
