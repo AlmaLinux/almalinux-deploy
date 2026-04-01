@@ -1024,6 +1024,111 @@ that won't boot in Secure Boot mode anymore[0m:\n"
     save_status_of_stage "check_custom_kernel"
 }
 
+# Check for remaining kernel packages from previous OS that are newer than default
+check_remain_kernel() {
+    if get_status_of_stage "check_remain_kernel"; then
+        return 0
+    fi
+
+    local -r os_type="${1}"
+
+    # Get default kernel version
+    local default_kernel
+    if ! default_kernel=$(grubby --default-kernel 2>/dev/null); then
+        # If grubby fails, skip this check
+        save_status_of_stage "check_remain_kernel"
+        return 0
+    fi
+
+    # Get version from kernel package
+    local default_version
+    default_version=$(rpm -qf --queryformat "%{VERSION}-%{RELEASE}" "${default_kernel}" 2>/dev/null)
+
+    if [ -z "${default_version}" ]; then
+        save_status_of_stage "check_remain_kernel"
+        return 0
+    fi
+
+    # Find all kernel packages
+    local kernel_packages
+    # kernel_packages=$(rpm -qa kernel 'kernel-*' 2>/dev/null | grep -E '^kernel(-[^-]+)?-[0-9]') || :
+    kernel_packages=$(rpm -qa kernel 'kernel-*' 2>/dev/null) || :
+
+    if [ -z "${kernel_packages}" ]; then
+        save_status_of_stage "check_remain_kernel"
+        return 0
+    fi
+
+    local non_alma_kernels=()
+
+    # Check each kernel package
+    while IFS= read -r pkg; do
+        if [ -z "${pkg}" ]; then
+            continue
+        fi
+
+        # Get package version
+        local pkg_version
+        pkg_version=$(rpm -q --queryformat "%{VERSION}-%{RELEASE}" "${pkg}" 2>/dev/null)
+
+        # Skip if it's the default kernel version
+        if [[ "${pkg_version}" == "${default_version}" ]]; then
+            continue
+        fi
+
+        # Compare versions using sort -V (version sort)
+        # If pkg_version sorts after default_version, it's newer
+        local newer_version
+        newer_version=$(printf '%s\n%s\n' "${default_version}" "${pkg_version}" | sort -V | tail -n1)
+
+        if [[ "${newer_version}" == "${pkg_version}" ]] && [[ "${pkg_version}" != "${default_version}" ]]; then
+            # Check vendor
+            local vendor
+            vendor=$(rpm -qi "${pkg}" 2>/dev/null | grep -i "^Vendor" | awk -F: '{print $2}' | xargs) || :
+
+            if [[ "${vendor}" != "AlmaLinux" ]]; then
+                non_alma_kernels+=("${pkg}")
+            fi
+        fi
+    done <<< "${kernel_packages}"
+
+    # Print warning if non-AlmaLinux kernels found
+    if [ ${#non_alma_kernels[@]} -gt 0 ]; then
+        # Get currently running kernel version
+        local running_kernel
+        running_kernel=$(uname -r)
+
+        # Check if any of the non-AlmaLinux kernels is currently running
+        local is_running_non_alma=0
+        for pkg in "${non_alma_kernels[@]}"; do
+            if [[ "${pkg}" == *"${running_kernel}"* ]]; then
+                is_running_non_alma=1
+                break
+            fi
+        done
+
+        echo ""
+        echo "There are kernel packages from ${os_type^^} with versions newer than default:"
+        printf '%s\n' "${non_alma_kernels[@]}"
+        echo ""
+        echo "Default kernel (from AlmaLinux): ${default_version}"
+
+        echo ""
+        echo "If you don't need these packages, you can remove them by using the command:"
+        echo "sudo dnf remove $(printf '%s ' "${non_alma_kernels[@]}")"
+
+        if [ ${is_running_non_alma} -eq 1 ]; then
+            echo ""
+            echo "WARNING: The currently running kernel (${running_kernel}) is from ${os_type^^}."
+            echo "These packages can only be removed after rebooting into the AlmaLinux kernel,"
+            echo "as RPM packages of a running kernel are protected."
+        fi
+    fi
+
+    report_step_done "Check remaining kernels"
+    save_status_of_stage "check_remain_kernel"
+}
+
 _backup_alternative() {
     local path="${1}"
     local bak_dir="${2}"
@@ -1422,6 +1527,7 @@ main() {
         add_efi_boot_record
     fi
     check_custom_kernel
+    check_remain_kernel "${os_type}"
     save_status_of_stage "completed"
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
