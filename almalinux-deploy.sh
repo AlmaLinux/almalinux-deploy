@@ -22,6 +22,7 @@ VERSION='0.1.13'
 DOWNGRADE='NO'
 REPO_URL=https://repo.almalinux.org/almalinux
 LOCAL_REPO='NO'
+PRESERVE_RHSM='NO'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -179,6 +180,8 @@ show_usage() {
     echo '  -v , --version                          print version information and exit'
     echo '  -l=URL/path , --local-repo=URL/path     use AlmaLinux local repositories at URL/path, like http://mirror.example.com/almalinux'
     echo '                                          in case if migrated system does not have internet access'
+    echo '  --preserve-rhsm                         Preserve Red Hat Subscription Manager configuration'
+    echo '                                          Only compatible with the -e option below, all other options will be ignored.'
     echo '  -e=pkg1*,pkg2 , --exclude=pkg1*,pkg2*   list of packages separated with comma to exclude on dnf distro-sync'
 }
 
@@ -493,9 +496,14 @@ assert_dnf_plugins_core() {
 #
 # Prints almalinux-release RPM package download URL.
 get_release_file_url() {
-    local -r os_version="${1%%.*}"
-    local -r arch="${2}"
-    echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux-release-latest-${os_version}.${arch}.rpm}"
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        local -r os_version="${1%%.*}"
+        local -r arch="${2}"
+        echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux-release-latest-${os_version}.${arch}.rpm}"
+    else
+        # get the url of this system's almalinux-release package from dnf
+        dnf download --url almalinux-release 2>/dev/null | grep http
+    fi
 }
 
 # Returns a latest almalinux-repos RPM package download URL.
@@ -505,9 +513,14 @@ get_release_file_url() {
 #
 # Prints almalinux-release RPM package download URL.
 get_repos_file_url() {
-    local -r os_version="${1%%.*}"
-    local -r arch="${2}"
-    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-repos-latest-${os_version}.${arch}.rpm}"
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        local -r os_version="${1%%.*}"
+        local -r arch="${2}"
+        echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-repos-latest-${os_version}.${arch}.rpm}"
+    else
+        # get the url of this system's almalinux-release package from dnf
+        dnf download --url almalinux-repos 2>/dev/null | grep http
+    fi
 }
 
 # Returns a latest almalinux-gpg-keys RPM package download URL.
@@ -517,9 +530,14 @@ get_repos_file_url() {
 #
 # Prints almalinux-gpg-keys RPM package download URL.
 get_gpg_keys_file_url() {
-    local -r os_version="${1%%.*}"
-    local -r arch="${2}"
-    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        local -r os_version="${1%%.*}"
+        local -r arch="${2}"
+        echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
+    else
+        # get the url of this system's almalinux-release package from dnf
+        dnf download --url almalinux-gpg-keys 2>/dev/null | grep http
+    fi
 }
 
 # Downloads and installs the AlmaLinux public PGP key.
@@ -532,7 +550,12 @@ install_rpm_pubkey() {
     fi
     local -r tmp_dir="${1}"
     local -r os_version="${2%%.*}"
-    local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/RPM-GPG-KEY-AlmaLinux-${os_version}}"
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/RPM-GPG-KEY-AlmaLinux-${os_version}}"
+    else
+        local -r repo=$(dnf repolist | awk '/BaseOS/{print $1}')
+        local -r pubkey_url=$(python3 -c "import configparser; c = configparser.ConfigParser(); c.read('/etc/yum.repos.d/redhat.repo'); print(c.get('$repo', 'gpgkey'))")
+    fi
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
     local -r step='Download RPM-GPG-KEY-AlmaLinux'
     local output
@@ -557,7 +580,7 @@ install_rpm_pubkey() {
 download_release_files() {
     local -r tmp_dir="${1}"
     local -r release_url="${2}"
-    local -r release_path="${tmp_dir}/almalinux-release-latest.rpm"
+    [[ "${PRESERVE_RHSM}" == "NO" ]] && local -r release_path="${tmp_dir}/almalinux-release-latest.rpm" || local -r release_path="${tmp_dir}/almalinux-release.rpm"
     local output
     if ! output=$(curl -f -s -S -o "${release_path}" "${release_url}" 2>&1); then
         report_step_error 'Download almalinux packages - release' "${output}"
@@ -726,9 +749,9 @@ cleanup_sss_cache() {
     fi
     if [[ "${DOWNGRADE}" == 'YES' ]]; then
         for file in /var/lib/sss/db/cache_*.ldb; do
-	   if [ -f "${file}" ]; then
-               mv -f "${file}" "${file}.bak"
-	   fi
+            if [ -f "${file}" ]; then
+                mv -f "${file}" "${file}.bak"
+            fi
         done
     fi
     save_status_of_stage "cleanup_sss_cache"
@@ -785,6 +808,11 @@ install_almalinux_release_package() {
     fi
     local -r release_path="${1}"
     rpm -Uvh --nodeps "${release_path}"
+    case "${os_version}" in
+      8*)
+        [[ "${PRESERVE_RHSM}" == "YES" ]] && rm -f /etc/yum.repos.d/almalinux*.repo
+        ;;
+    esac
     report_step_done 'Install almalinux-release package'
     save_status_of_stage "install_almalinux_release_package"
 }
@@ -796,6 +824,7 @@ install_almalinux_repos_package() {
     fi
     local -r repos_path="${1}"
     rpm -Uvh --nodeps "${repos_path}"
+    [[ "${PRESERVE_RHSM}" == "YES" ]] && rm -f /etc/yum.repos.d/almalinux*.repo
     report_step_done 'Install almalinux-repos package'
     save_status_of_stage "install_almalinux_repos_package"
 }
@@ -909,14 +938,17 @@ distro_sync() {
     local -r step='Run dnf distro-sync -y'
     local ret_code=0
     local -r os_version="${1}"
-    case "${os_version}" in
-      8*)
-        local dnf_repos="--enablerepo=powertools"
-        ;;
-      9*|10*)
-        local dnf_repos="--enablerepo=crb"
-        ;;
-    esac
+    local dnf_repos=""
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        case "${os_version}" in
+          8*)
+            local dnf_repos="--enablerepo=powertools"
+            ;;
+          9*|10*)
+            local dnf_repos="--enablerepo=crb"
+            ;;
+        esac
+    fi
     local exclude_pkgs="--exclude="
     # create needed repo
     if [ "${panel_type}" == "plesk" ]; then
@@ -938,11 +970,20 @@ distro_sync() {
     if [ -n "${EXCLUDE_PKGS}" ]; then
         exclude_pkgs+=",${EXCLUDE_PKGS}"
     fi
-    dnf distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
-        ret_code=${?}
-        report_step_error "${step}. Exit code: ${ret_code}"
-        exit ${ret_code}
-    }
+    # We can't have a empty dnf_repos variable, because dnf will fail with "No package  installed." (note double space)
+    if [[ "${dnf_repos}" == "" ]]; then
+        dnf distro-sync -y "${exclude_pkgs}" || {
+            ret_code=${?}
+            report_step_error "${step}. Exit code: ${ret_code}"
+            exit ${ret_code}
+        }
+    else
+        dnf distro-sync -y "${dnf_repos}" "${exclude_pkgs}" || {
+            ret_code=${?}
+            report_step_error "${step}. Exit code: ${ret_code}"
+            exit ${ret_code}
+        }
+    fi
     # remove unnecessary repo
     if [ "${panel_type}" == "plesk" ]; then
         plesk installer --select-release-current --show-components
@@ -1251,7 +1292,6 @@ _restore_alternative() {
             fi
         done
     done
-
 }
 
 # backup existing alternatives, including the current states of alternatives
@@ -1346,7 +1386,8 @@ reinstall_secure_boot_packages() {
         local kernel_package
         for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2'); do
             if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
-                yum reinstall "${pkg}" -y
+            # There is a timing issue where some packages are available on RHEL but not yet on AlmaLinux mirrors, so we ignore errors here
+                yum reinstall -y "${pkg}"  || true
             fi
         done
         kernel_path="$(grubby --default-kernel)"
@@ -1362,7 +1403,8 @@ reinstall_secure_boot_packages() {
         fi
         kernel_package="$(rpm -qf "$kernel_path")"
         if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
-            yum reinstall "${kernel_package}" -y
+        # There is a timing issue where kernel packages are available on RHEL but not yet on AlmaLinux mirrors, so we ignore errors here
+            yum reinstall -y "$kernel_package" || true
         fi
     fi
     report_step_done "All Secure Boot related packages which were not released by AlmaLinux are reinstalled"
@@ -1413,7 +1455,12 @@ remove_redhat_rhsm_rpms() {
     if get_status_of_stage "remove_redhat_rhsm_rpms"; then
         return 0
     fi
-    rpm -e --nodeps "${REDHAT_RHSM_RPMS[@]}" >/dev/null 2>&1 || true
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        rpm -e --nodeps "${REDHAT_RHSM_RPMS[@]}" >/dev/null 2>&1 || true
+    else
+        # We want dependencies here
+        dnf remove -y insights-core rhc >/dev/null 2>&1 || true
+    fi
     report_step_done "Red Hat Subscription Manager packages are removed (with rpm --nodeps)"
     save_status_of_stage "remove_redhat_rhsm_rpms"
 }
@@ -1451,7 +1498,7 @@ main() {
     assert_supported_system "${os_type}" "${os_version}" "${arch}"
     assert_supported_filesystem "${os_version}"
     assert_dnf_plugins_core
-    check_local_repo "${os_version}" "${arch}"
+    [[ "${PRESERVE_RHSM}" == "NO" ]] && check_local_repo "${os_version}" "${arch}"
     get_enabled_repos
 
     read -r panel_type panel_version < <(get_panel_info)
@@ -1482,9 +1529,11 @@ main() {
         backup_issue
 
         if [[ "${os_type}" == "rhel" ]]; then
-             subscription_manager_unregister "${os_version}"
+             if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+                 subscription_manager_unregister "${os_version}"
+                 remove_redhat_repo_files
+             fi
              remove_redhat_rhsm_rpms
-             remove_redhat_repo_files
         fi
 
         case "${os_version}" in
@@ -1511,9 +1560,9 @@ main() {
     esac
 
     backup_alternatives
-    switch_to_local_repo "${os_version}" "${arch}"
+    [[ "${PRESERVE_RHSM}" == "NO" ]] && switch_to_local_repo "${os_version}" "${arch}"
     reset_wrong_module_streams
-    enable_repos "${os_version}"
+    [[ "${PRESERVE_RHSM}" == "NO" ]] && enable_repos "${os_version}"
     distro_sync "${os_version}"
     restore_module_streams
     restore_alternatives
@@ -1540,7 +1589,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             exit 0
             ;;
         -f | --full)
-            dnf_upgrade
+            DNF_UPGRADE='YES'
             ;;
         -v | --version)
             echo "${VERSION}"
@@ -1551,6 +1600,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         -t | --tests)
             exit 0
+            ;;
+        --preserve-rhsm)
+            PRESERVE_RHSM='YES'
             ;;
         -e=* | --exclude=*)
             EXCLUDE_PKGS="${opt#*=}"
@@ -1568,6 +1620,14 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         esac
     done
+    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
+         LOCAL_REPO='NO'
+         REPO_URL=''
+         DNF_UPGRADE='NO'
+         dnf install -y python3-dnf-plugin-post-transaction-actions >/dev/null
+         echo -e '# AlmaLinux Repo files break dnf if no proxy is available\nalmalinux-re*:in:/usr/bin/rm -f /etc/yum.repos.d/almalinux*.repo' > /etc/dnf/plugins/post-transaction-actions.d/almalinux-repos.conf
+    fi
+    [[ "${DNF_UPGRADE}" == "YES" ]] && dnf_upgrade
     setup_log_files
     set -x
     main

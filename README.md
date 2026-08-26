@@ -114,6 +114,9 @@ The script supports the following options:
 - `-d, --downgrade` - Allow downgrade from CentOS Stream to AlmaLinux stable
 - `-v, --version` - Print script version and exit
 - `-l=URL, --local-repo=URL` - Use AlmaLinux local repositories at specified URL/path (for systems without internet access)
+- `--preserve-rhsm` - Preserve Red Hat Subscription Manager configuration.  
+                      Administrators need to ensure the correct repositories are set.  
+                      Only compatible with the -e option below, all other options will be ignored
 - `-e=pkg1*,pkg2*, --exclude=pkg1*,pkg2*` - Comma-separated list of packages to exclude during dnf distro-sync
 
 ### Environment Variables
@@ -183,6 +186,7 @@ When migrating from RHEL, the script automatically:
 - Removes subscription-manager related packages
 - Disables RHEL-specific DNF plugins
 - Backs up and removes RHEL repository files
+Using the '--preserve-rhsm' stops this behavior and preserves the subscription-manager configuration. Administrators must ensure the correct repositories are set for AlmaLinux.
 
 ### Container Environments
 The script detects OCI-compliant container environments and automatically:
@@ -199,7 +203,7 @@ The script backs up and restores system alternatives (e.g., Python, Java version
 ### UEFI Secure Boot Support
 The script fully supports UEFI Secure Boot environments. During migration, it:
 - Reinstalls all Secure Boot related packages (shim, grub2, fwupd) with AlmaLinux signed versions
-- Reinstalls the kernel package with AlmaLinux signed version
+- Reinstalls the kernel package with AlmaLinux signed version.
 - Creates appropriate EFI boot entries using shim bootloaders (shimx64.efi for x86_64, shimaa64.efi for aarch64)
 - Handles BTRFS subvolume paths correctly for EL10+ systems
 
@@ -210,6 +214,7 @@ For Oracle Linux migrations, the script automatically resets and restores module
 
 ### Repository Mapping
 The script intelligently maps enabled repositories from your source distribution to equivalent AlmaLinux repositories:
+Using the '--preserve-rhsm' option does not do these mappings. It is up to the Administrator to ensure the correct repositories are set for AlmaLinux.
 
 - **extras** - Extra packages for Enterprise Linux
   - Maps: CentOS/Rocky `extras`, `extras-common`, MiracleLinux `9/10-latest-extras`, Oracle Linux `ol8/9/10_addons`
