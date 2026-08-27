@@ -1494,6 +1494,7 @@ remove_redhat_repo_files() {
     report_step_done "Remove RHEL repositories' files if any"
     save_status_of_stage "remove_redhat_repo_files"
 }
+
 # Installs the dnf post-transaction-actions plugin and a hook which removes
 # AlmaLinux repository files as soon as almalinux-release/almalinux-repos
 # create them. Only used with --preserve-rhsm, where repositories are
