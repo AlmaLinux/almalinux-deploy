@@ -23,6 +23,7 @@ DOWNGRADE='NO'
 REPO_URL=https://repo.almalinux.org/almalinux
 LOCAL_REPO='NO'
 PRESERVE_RHSM='NO'
+DNF_UPGRADE='NO'
 
 BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
                 "centos-logos-ipa" "centos-logos-httpd" \
@@ -1386,8 +1387,8 @@ reinstall_secure_boot_packages() {
         local kernel_package
         for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2'); do
             if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
-            # There is a timing issue where some packages are available on RHEL but not yet on AlmaLinux mirrors, so we ignore errors here
-                yum reinstall -y "${pkg}"  || true
+                yum reinstall -y "${pkg}"
+
             fi
         done
         kernel_path="$(grubby --default-kernel)"
@@ -1483,7 +1484,7 @@ remove_redhat_repo_files() {
 # create them. Only used with --preserve-rhsm, where repositories are
 # managed by subscription-manager (Foreman/Katello).
 setup_preserve_rhsm_hook() {
-    if [[ "${PRESERVE_RHSM}" != "YES" ]]; then
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
         return 0
     fi
     if get_status_of_stage "setup_preserve_rhsm_hook"; then
@@ -1514,6 +1515,7 @@ main() {
     local release_path
     local panel_type
     local panel_version
+    assert_run_as_root
     setup_preserve_rhsm_hook
     arch="$(get_system_arch)"
     os_type="$(get_os_release_var 'ID')"
