@@ -1403,7 +1403,6 @@ reinstall_secure_boot_packages() {
         fi
         kernel_package="$(rpm -qf "$kernel_path")"
         if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
-        # There is a timing issue where kernel packages are available on RHEL but not yet on AlmaLinux mirrors, so we ignore errors here
             if ! yum reinstall -y "$kernel_package"; then
                 # This exact kernel version isn't in AlmaLinux repositories yet.
                 # A kernel signed by another vendor won't boot with Secure Boot enabled,
