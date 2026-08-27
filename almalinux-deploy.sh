@@ -1388,7 +1388,6 @@ reinstall_secure_boot_packages() {
         for pkg in $(rpm -qa | grep -E 'shim|fwupd|grub2'); do
             if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "$pkg")" ]]; then
                 yum reinstall -y "${pkg}"
-
             fi
         done
         kernel_path="$(grubby --default-kernel)"
