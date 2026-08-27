@@ -1650,7 +1650,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
          LOCAL_REPO='NO'
          REPO_URL=''
          DNF_UPGRADE='NO'
-         dnf install -y python3-dnf-plugin-post-transaction-actions >/dev/null
     fi
     [[ "${DNF_UPGRADE}" == "YES" ]] && dnf_upgrade
     setup_log_files
