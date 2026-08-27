@@ -1404,7 +1404,23 @@ reinstall_secure_boot_packages() {
         kernel_package="$(rpm -qf "$kernel_path")"
         if [[ "AlmaLinux" != "$(rpm -q --queryformat '%{vendor}' "${kernel_package}")" ]]; then
         # There is a timing issue where kernel packages are available on RHEL but not yet on AlmaLinux mirrors, so we ignore errors here
-            yum reinstall -y "$kernel_package" || true
+            if ! yum reinstall -y "$kernel_package"; then
+                # This exact kernel version isn't in AlmaLinux repositories yet.
+                # A kernel signed by another vendor won't boot with Secure Boot enabled,
+                # so make sure the latest AlmaLinux kernel is installed and is the default.
+                dnf install -y kernel
+                local alma_kernel
+                alma_kernel="$(rpm -q kernel --queryformat '%{VENDOR}|%{VERSION}-%{RELEASE}.%{ARCH}\n' \
+                    | awk -F'|' '$1 == "AlmaLinux" {print $2}' | sort -V | tail -n 1)"
+                if [[ -z "${alma_kernel}" ]]; then
+                    report_step_error 'Install AlmaLinux kernel' \
+                        "${kernel_package} is not available in AlmaLinux repositories and no AlmaLinux kernel is installed"
+                    exit 1
+                fi
+                grubby --set-default "/boot/vmlinuz-${alma_kernel}"
+                echo "${kernel_package} is not available in AlmaLinux repositories yet;" \
+                     "default kernel set to ${alma_kernel}. The remaining kernel(s) are reported below."
+            fi
         fi
     fi
     report_step_done "All Secure Boot related packages which were not released by AlmaLinux are reinstalled"
