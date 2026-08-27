@@ -1651,7 +1651,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
          REPO_URL=''
          DNF_UPGRADE='NO'
          dnf install -y python3-dnf-plugin-post-transaction-actions >/dev/null
-         echo -e '# AlmaLinux Repo files break dnf if no proxy is available\nalmalinux-re*:in:/usr/bin/rm -f /etc/yum.repos.d/almalinux*.repo' > /etc/dnf/plugins/post-transaction-actions.d/almalinux-repos.conf
     fi
     [[ "${DNF_UPGRADE}" == "YES" ]] && dnf_upgrade
     setup_log_files
