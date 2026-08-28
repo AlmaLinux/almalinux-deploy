@@ -809,11 +809,9 @@ install_almalinux_release_package() {
     fi
     local -r release_path="${1}"
     rpm -Uvh --nodeps "${release_path}"
-    case "${os_version}" in
-      8*)
-        [[ "${PRESERVE_RHSM}" == "YES" ]] && rm -f /etc/yum.repos.d/almalinux*.repo
-        ;;
-    esac
+    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
+        disable_almalinux_repo_files
+    fi
     report_step_done 'Install almalinux-release package'
     save_status_of_stage "install_almalinux_release_package"
 }
