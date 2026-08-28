@@ -1511,7 +1511,6 @@ main() {
     local panel_type
     local panel_version
     assert_run_as_root
-    setup_preserve_rhsm_hook
     arch="$(get_system_arch)"
     os_type="$(get_os_release_var 'ID')"
     os_version="$(get_os_version "${os_type}")"
