@@ -1033,8 +1033,6 @@ check_remain_kernel() {
         return 0
     fi
 
-    local -r os_type="${1}"
-
     # Get default kernel version
     local default_kernel
     if ! default_kernel=$(grubby --default-kernel 2>/dev/null); then
@@ -1063,6 +1061,8 @@ check_remain_kernel() {
     fi
 
     local non_alma_kernels=()
+    # vendor of every package in non_alma_kernels, same index
+    local non_alma_vendors=()
 
     # Check each kernel package
     while IFS= read -r pkg; do
@@ -1091,6 +1091,7 @@ check_remain_kernel() {
 
             if [[ "${vendor}" != "AlmaLinux" ]]; then
                 non_alma_kernels+=("${pkg}")
+                non_alma_vendors+=("${vendor:-unknown}")
             fi
         fi
     done <<< "${kernel_packages}"
@@ -1103,16 +1104,21 @@ check_remain_kernel() {
 
         # Check if any of the non-AlmaLinux kernels is currently running
         local is_running_non_alma=0
-        for pkg in "${non_alma_kernels[@]}"; do
-            if [[ "${pkg}" == *"${running_kernel}"* ]]; then
+        local running_vendor=""
+        local i
+        for i in "${!non_alma_kernels[@]}"; do
+            if [[ "${non_alma_kernels[i]}" == *"${running_kernel}"* ]]; then
                 is_running_non_alma=1
+                running_vendor="${non_alma_vendors[i]}"
                 break
             fi
         done
 
         echo ""
-        echo "There are kernel packages from ${os_type^^} with versions newer than default:"
-        printf '%s\n' "${non_alma_kernels[@]}"
+        echo "There are kernel packages not released by AlmaLinux with versions newer than default:"
+        for i in "${!non_alma_kernels[@]}"; do
+            printf '%s (vendor: %s)\n' "${non_alma_kernels[i]}" "${non_alma_vendors[i]}"
+        done
         echo ""
         echo "Default kernel (from AlmaLinux): ${default_version}"
 
@@ -1122,7 +1128,7 @@ check_remain_kernel() {
 
         if [ ${is_running_non_alma} -eq 1 ]; then
             echo ""
-            echo "WARNING: The currently running kernel (${running_kernel}) is from ${os_type^^}."
+            echo "WARNING: The currently running kernel (${running_kernel}) is not released by AlmaLinux (vendor: ${running_vendor})."
             echo "These packages can only be removed after rebooting into the AlmaLinux kernel,"
             echo "as RPM packages of a running kernel are protected."
         fi
@@ -1540,7 +1546,7 @@ main() {
         add_efi_boot_record
     fi
     check_custom_kernel
-    check_remain_kernel "${os_type}"
+    check_remain_kernel
     save_status_of_stage "completed"
     printf '\n\033[0;32mMigration to AlmaLinux is completed\033[0m\n'
 }
