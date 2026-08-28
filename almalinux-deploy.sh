@@ -1641,10 +1641,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         esac
     done
-    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
-         LOCAL_REPO='NO'
-         REPO_URL=''
-         DNF_UPGRADE='NO'
+    if [[ "${PRESERVE_RHSM}" == "YES" ]] && \
+       [[ "${LOCAL_REPO}" == "YES" || "${DNF_UPGRADE}" == "YES" || "${DOWNGRADE}" == "YES" ]]; then
+        echo "Error: --preserve-rhsm can be combined only with the -e/--exclude option" >&2
+        exit 2
     fi
     [[ "${DNF_UPGRADE}" == "YES" ]] && dnf_upgrade
     setup_log_files
