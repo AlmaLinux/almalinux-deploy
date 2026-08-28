@@ -1499,32 +1499,6 @@ remove_redhat_repo_files() {
     save_status_of_stage "remove_redhat_repo_files"
 }
 
-# Installs the dnf post-transaction-actions plugin and a hook which removes
-# AlmaLinux repository files as soon as almalinux-release/almalinux-repos
-# create them. Only used with --preserve-rhsm, where repositories are
-# managed by subscription-manager (Foreman/Katello).
-setup_preserve_rhsm_hook() {
-    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
-        return 0
-    fi
-    if get_status_of_stage "setup_preserve_rhsm_hook"; then
-        return 0
-    fi
-    local -r step='Install dnf post-transaction-actions hook for --preserve-rhsm'
-    local -r hook_dir='/etc/dnf/plugins/post-transaction-actions.d'
-    local output
-    if ! output=$(dnf install -y python3-dnf-plugin-post-transaction-actions 2>&1); then
-        report_step_error "${step}" "${output}"
-        exit 1
-    fi
-    mkdir -p "${hook_dir}"
-    printf '%s\n' '# AlmaLinux Repo files break dnf if no proxy is available' \
-        'almalinux-re*:in:/usr/bin/rm -f /etc/yum.repos.d/almalinux*.repo' \
-        > "${hook_dir}/almalinux-repos.conf"
-    report_step_done "${step}"
-    save_status_of_stage "setup_preserve_rhsm_hook"
-}
-
 main() {
     is_migration_completed
     local arch
