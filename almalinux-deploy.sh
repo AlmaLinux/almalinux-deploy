@@ -1476,7 +1476,12 @@ remove_redhat_rhsm_rpms() {
         # We want dependencies here
         dnf remove -y insights-core rhc >/dev/null 2>&1 || true
     fi
-    report_step_done "Red Hat Subscription Manager packages are removed (with rpm --nodeps)"
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        report_step_done "Red Hat Subscription Manager packages are removed (with rpm --nodeps)"
+    else
+        report_step_done "Red Hat Insights packages (insights-core, rhc) are removed, subscription-manager is preserved"
+    fi
+
     save_status_of_stage "remove_redhat_rhsm_rpms"
 }
 
