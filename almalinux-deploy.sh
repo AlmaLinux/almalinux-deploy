@@ -182,7 +182,8 @@ show_usage() {
     echo '  -l=URL/path , --local-repo=URL/path     use AlmaLinux local repositories at URL/path, like http://mirror.example.com/almalinux'
     echo '                                          in case if migrated system does not have internet access'
     echo '  --preserve-rhsm                         Preserve Red Hat Subscription Manager configuration'
-    echo '                                          Only compatible with the -e option below, all other options will be ignored.'
+    echo '                                          Can be combined only with the -e/--exclude option below.'
+
     echo '  -e=pkg1*,pkg2 , --exclude=pkg1*,pkg2*   list of packages separated with comma to exclude on dnf distro-sync'
 }
 
