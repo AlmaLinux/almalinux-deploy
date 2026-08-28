@@ -114,9 +114,9 @@ The script supports the following options:
 - `-d, --downgrade` - Allow downgrade from CentOS Stream to AlmaLinux stable
 - `-v, --version` - Print script version and exit
 - `-l=URL, --local-repo=URL` - Use AlmaLinux local repositories at specified URL/path (for systems without internet access)
-- `--preserve-rhsm` - Preserve Red Hat Subscription Manager configuration.  
-                      Administrators need to ensure the correct repositories are set.  
-                      Only compatible with the -e option below, all other options will be ignored
+- `--preserve-rhsm` - Preserve Red Hat Subscription Manager configuration (Foreman/Katello managed hosts).
+                      Administrators need to ensure the correct repositories are set.
+                      Can be combined only with `-e/--exclude`; other options are rejected.
 - `-e=pkg1*,pkg2*, --exclude=pkg1*,pkg2*` - Comma-separated list of packages to exclude during dnf distro-sync
 
 ### Environment Variables
