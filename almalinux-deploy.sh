@@ -1228,6 +1228,12 @@ _restore_alternative() {
     while read -r _alt_dest _alt_link; do
         alt_link="${_alt_link}"
         alt_dest="${_alt_dest}"
+        # The package providing the alternative may have been removed by
+        # dnf distro-sync (e.g. on downgrade from CentOS Stream); nothing to restore then
+        if [[ -z "${alt_dest}" || ! -e "${alt_dest}" ]]; then
+            echo "Skip restoring alternative ${alt_name}: ${alt_dest:-target} no longer exists"
+            return 0
+        fi
         if [[ ! -e "${alt_link}" ]]; then
             ln -sf "${alt_dest}" "${alt_link}"
         fi
@@ -1237,7 +1243,11 @@ _restore_alternative() {
         if [[ ! -e "${main_link}" ]]; then
             # restore system symlink for alternative, e.g.
             # /usr/bin/unversioned-python -> /etc/alternatives/python
-            ln -sf "${alt_link}" "${main_link}"
+            if [[ -d "$(dirname "${main_link}")" ]]; then
+                ln -sf "${alt_link}" "${main_link}"
+            else
+                echo "Skip restoring link ${main_link} for alternative ${alt_name}: directory no longer exists"
+            fi
         fi
         for j in "${!names[@]}"; do
             if [[ "${alt_dest}" == "${alternatives[$i]}" ]]; then
@@ -1246,7 +1256,7 @@ _restore_alternative() {
                     # /etc/alternatives/unversioned-python-man -> /usr/share/man/man1/unversioned-python.1.gz
                     ln -sf "${dests[$(( "${j}" + "${#links[@]}" * "${i}"))]}" "${ALT_DIR}/${names[$j]}"
                 fi
-                if [[ -e "${ALT_DIR}/${names[$j]}" && ! -e "${links[$j]}" ]]; then
+                if [[ -e "${ALT_DIR}/${names[$j]}" && ! -e "${links[$j]}" && -d "$(dirname "${links[$j]}")" ]]; then
                     # restore slave link for an alternative
                     # e.g. /usr/share/man/man1/python.1.gz -> /etc/alternatives/unversioned-python-man
                     ln -sf "${ALT_DIR}/${names[$j]}" "${links[$j]}"
