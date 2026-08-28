@@ -823,7 +823,9 @@ install_almalinux_repos_package() {
     fi
     local -r repos_path="${1}"
     rpm -Uvh --nodeps "${repos_path}"
-    [[ "${PRESERVE_RHSM}" == "YES" ]] && rm -f /etc/yum.repos.d/almalinux*.repo
+    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
+        disable_almalinux_repo_files
+    fi
     report_step_done 'Install almalinux-repos package'
     save_status_of_stage "install_almalinux_repos_package"
 }
