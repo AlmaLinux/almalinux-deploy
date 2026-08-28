@@ -101,6 +101,9 @@ setup_log_files() {
     exec > >(tee ${log_file})
     exec 5> ${debug_log_file}
     BASH_XTRACEFD=5
+    # The debug log descriptor is inherited by child processes; keep LVM tools
+    # (called by grub2-probe etc.) from complaining about it
+    export LVM_SUPPRESS_FD_WARNINGS=1
 }
 
 
