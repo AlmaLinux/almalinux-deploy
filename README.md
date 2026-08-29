@@ -256,19 +256,23 @@ This ensures that if you had specific repositories enabled before migration, the
 The '--preserve-rhsm' option is used to preserve the Red Hat Subscription Manager (RHSM) configuration.
 This option totally removes all the intelligence the authors have put into the script to manage repositories.
 
-In addition the script will install `python3-dnf-plugin-post-transaction-actions `and create `/etc/dnf/plugins/post-transaction-actions.d/almalinux-repos.conf`.  
-`/etc/dnf/plugins/post-transaction-actions.d/almalinux-repos.conf` will remove `/etc/yum.repos.d/almalinux*.repo` files as soon as an AlmaLinux release or repos RPM creates them.  
-This enables your servers to not have a proxy setup in `dnf.conf` or other access to the internet.
-
 You, the Administrator, must make sure your systems are ready for migration and that the repositories are configured correctly.  
 You will probably do this by running a preparation script on the target server.
 
-An simple example will be:
+An simple **example** will be:
 ```
 #!/usr/bin/bash
 
 . /etc/os-release
 OS_VER=${VERSION_ID%.*}
+
+/usr/bin/dnf install -y python3-dnf-plugin-post-transaction-actions 2>/dev/null || exit 1
+hook_dir='/etc/dnf/plugins/post-transaction-actions.d'
+mkdir -p "${hook_dir}"
+printf '%s\n' '# AlmaLinux Repo files break dnf if no proxy is available' \
+        'almalinux-re*:in:/usr/bin/rm -f /etc/yum.repos.d/almalinux*.repo' \
+        > "${hook_dir}/almalinux-repos.conf"
+# You could change the above to a `sed` and disable the repos if you like.
 
 CodeReadyRepoInstalled=$(/usr/bin/dnf repolist | /usr/bin/awk '/codeready-builder/{print $1}')
 if [ "${CodeReadyRepoInstalled}" ]; then
