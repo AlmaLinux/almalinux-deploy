@@ -270,9 +270,8 @@ OS_VER=${VERSION_ID%.*}
 hook_dir='/etc/dnf/plugins/post-transaction-actions.d'
 mkdir -p "${hook_dir}"
 printf '%s\n' '# AlmaLinux Repo files break dnf if no proxy is available' \
-        'almalinux-re*:in:/usr/bin/rm -f /etc/yum.repos.d/almalinux*.repo' \
+        'almalinux-re*:in:/usr/bin/sed -i -E 's/^(enabled\s*=\s*).*/\10/I' $(/usr/bin/ls /etc/yum.repos.d/*.repo | /usr/bin/grep -vi redhat.repo) \
         > "${hook_dir}/almalinux-repos.conf"
-# You could change the above to a `sed` and disable the repos if you like.
 
 CodeReadyRepoInstalled=$(/usr/bin/dnf repolist | /usr/bin/awk '/codeready-builder/{print $1}')
 if [ "${CodeReadyRepoInstalled}" ]; then
