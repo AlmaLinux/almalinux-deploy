@@ -801,7 +801,6 @@ remove_not_needed_redhat_dirs() {
     save_status_of_stage "remove_not_needed_redhat_dirs"
 }
 
-
 # Disables repositories in the AlmaLinux repository files (--preserve-rhsm mode).
 # The files are %config(noreplace), so the change survives package updates;
 # no repository metadata is fetched from repo.almalinux.org afterwards.
