@@ -581,7 +581,12 @@ install_rpm_pubkey() {
 download_release_files() {
     local -r tmp_dir="${1}"
     local -r release_url="${2}"
-    [[ "${PRESERVE_RHSM}" == "NO" ]] && local -r release_path="${tmp_dir}/almalinux-release-latest.rpm" || local -r release_path="${tmp_dir}/almalinux-release.rpm"
+    local release_path
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        release_path="${tmp_dir}/almalinux-release-latest.rpm"
+    else
+        release_path="${tmp_dir}/almalinux-release.rpm"
+    fi
     local output
     if ! output=$(curl -f -s -S -o "${release_path}" "${release_url}" 2>&1); then
         report_step_error 'Download almalinux packages - release' "${output}"
