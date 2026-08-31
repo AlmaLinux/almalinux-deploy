@@ -802,6 +802,17 @@ remove_not_needed_redhat_dirs() {
 }
 
 
+# Disables repositories in the AlmaLinux repository files (--preserve-rhsm mode).
+# The files are %config(noreplace), so the change survives package updates;
+# no repository metadata is fetched from repo.almalinux.org afterwards.
+disable_almalinux_repo_files() {
+    local repo_file
+    while IFS= read -r -d '' repo_file; do
+        sed -i -e 's/^enabled\s*=\s*1/enabled=0/' "${repo_file}"
+    done < <(find /etc/yum.repos.d -maxdepth 1 -name 'almalinux*.repo' -print0)
+    report_step_done 'Disable AlmaLinux repository files (repositories are managed by subscription-manager)'
+}
+
 # Install package almalinux-release
 install_almalinux_release_package() {
     if get_status_of_stage "install_almalinux_release_package"; then
