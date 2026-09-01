@@ -546,15 +546,36 @@ install_rpm_pubkey() {
     fi
     local -r tmp_dir="${1}"
     local -r os_version="${2%%.*}"
-    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
-        local -r pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/RPM-GPG-KEY-AlmaLinux-${os_version}}"
-    else
-        local -r repo=$(dnf repolist | awk '/BaseOS/{print $1}')
-        local -r pubkey_url=$(python3 -c "import configparser; c = configparser.ConfigParser(); c.read('/etc/yum.repos.d/redhat.repo'); print(c.get('$repo', 'gpgkey'))")
-    fi
+    local pubkey_url
     local -r pubkey_path="${tmp_dir}/RPM-GPG-KEY-AlmaLinux"
     local -r step='Download RPM-GPG-KEY-AlmaLinux'
     local output
+    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
+        pubkey_url="${ALMA_PUBKEY_URL:-${REPO_URL}/RPM-GPG-KEY-AlmaLinux-${os_version}}"
+    elif [[ -n "${ALMA_PUBKEY_URL:-}" ]]; then
+        pubkey_url="${ALMA_PUBKEY_URL}"
+    else
+        # Take the gpgkey URL from the enabled AlmaLinux BaseOS repository
+        # (match on the repo id column only, so RHEL's own baseos repo is not picked up)
+        local repo_ids
+        repo_ids=$(dnf repolist --enabled | awk 'NR > 1 && $1 ~ /BaseOS/ {print $1}')
+        if [[ -z "${repo_ids}" ]]; then
+            report_step_error "${step}" \
+                'No enabled repository with "BaseOS" in its id found; enable the AlmaLinux BaseOS repository or set ALMA_PUBKEY_URL'
+            exit 1
+        fi
+        if [[ "$(wc -l <<< "${repo_ids}")" -ne 1 ]]; then
+            report_step_error "${step}" \
+                "More than one enabled repository matches \"BaseOS\": $(tr '\n' ' ' <<< "${repo_ids}"); set ALMA_PUBKEY_URL to choose the key"
+            exit 1
+        fi
+        pubkey_url=$(dnf config-manager --dump "${repo_ids}" | awk -F' = ' '$1 == "gpgkey" {print $2}' | awk '{print $1}' | head -n 1)
+        if [[ -z "${pubkey_url}" ]]; then
+            report_step_error "${step}" "Repository ${repo_ids} has no gpgkey configured; set ALMA_PUBKEY_URL"
+            exit 1
+        fi
+        echo "Using GPG key ${pubkey_url} from repository ${repo_ids}"
+    fi
     if ! output=$(curl -f -s -S -o "${pubkey_path}" "${pubkey_url}" 2>&1); then
         report_step_error "${step}" "${output}"
         exit 1
