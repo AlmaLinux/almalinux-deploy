@@ -114,6 +114,9 @@ The script supports the following options:
 - `-d, --downgrade` - Allow downgrade from CentOS Stream to AlmaLinux stable
 - `-v, --version` - Print script version and exit
 - `-l=URL, --local-repo=URL` - Use AlmaLinux local repositories at specified URL/path (for systems without internet access)
+- `--preserve-rhsm` - Preserve Red Hat Subscription Manager configuration (Foreman/Katello managed hosts).
+                      Administrators need to ensure the correct repositories are set.
+                      Can be combined only with `-e/--exclude`; other options are rejected.
 - `-e=pkg1*,pkg2*, --exclude=pkg1*,pkg2*` - Comma-separated list of packages to exclude during dnf distro-sync
 
 ### Environment Variables
@@ -183,6 +186,7 @@ When migrating from RHEL, the script automatically:
 - Removes subscription-manager related packages
 - Disables RHEL-specific DNF plugins
 - Backs up and removes RHEL repository files
+Using the '--preserve-rhsm' stops this behavior and preserves the subscription-manager configuration. Administrators must ensure the correct repositories are set for AlmaLinux.
 
 ### Container Environments
 The script detects OCI-compliant container environments and automatically:
@@ -199,7 +203,7 @@ The script backs up and restores system alternatives (e.g., Python, Java version
 ### UEFI Secure Boot Support
 The script fully supports UEFI Secure Boot environments. During migration, it:
 - Reinstalls all Secure Boot related packages (shim, grub2, fwupd) with AlmaLinux signed versions
-- Reinstalls the kernel package with AlmaLinux signed version
+- Reinstalls the kernel package with AlmaLinux signed version.
 - Creates appropriate EFI boot entries using shim bootloaders (shimx64.efi for x86_64, shimaa64.efi for aarch64)
 - Handles BTRFS subvolume paths correctly for EL10+ systems
 
@@ -210,6 +214,7 @@ For Oracle Linux migrations, the script automatically resets and restores module
 
 ### Repository Mapping
 The script intelligently maps enabled repositories from your source distribution to equivalent AlmaLinux repositories:
+Using the '--preserve-rhsm' option does not do these mappings. It is up to the Administrator to ensure the correct repositories are set for AlmaLinux.
 
 - **extras** - Extra packages for Enterprise Linux
   - Maps: CentOS/Rocky `extras`, `extras-common`, MiracleLinux `9/10-latest-extras`, Oracle Linux `ol8/9/10_addons`
@@ -245,6 +250,60 @@ The script intelligently maps enabled repositories from your source distribution
   - Maps: CentOS/Rocky/Virtuozzo `plus`
 
 This ensures that if you had specific repositories enabled before migration, the equivalent AlmaLinux repositories will be automatically enabled after migration.
+
+### Preserving Red Hat Subscription Manager (RHSM) Configuration
+
+The '--preserve-rhsm' option is used to preserve the Red Hat Subscription Manager (RHSM) configuration.
+This option totally removes all the intelligence the authors have put into the script to manage repositories.
+
+You, the Administrator, must make sure your systems are ready for migration and that the repositories are configured correctly.  
+You will probably do this by running a preparation script on the target server.
+
+An simple **example** will be:
+```
+#!/usr/bin/bash
+
+. /etc/os-release
+OS_VER=${VERSION_ID%.*}
+
+/usr/bin/dnf install -y python3-dnf-plugin-post-transaction-actions 2>/dev/null || exit 1
+hook_dir='/etc/dnf/plugins/post-transaction-actions.d'
+mkdir -p "${hook_dir}"
+printf '%s\n' '# AlmaLinux Repo files break dnf if no proxy is available' \
+       "almalinux-re*:in:/usr/bin/sed -i -E 's/^(enabled\s*=\s*).*/\10/I' /etc/yum.repos.d/almalinux*.repo" \
+       > "${hook_dir}/check-almalinux_repos.action"
+
+CodeReadyRepoInstalled=$(/usr/bin/dnf repolist | /usr/bin/awk '/codeready-builder/{print $1}')
+if [ "${CodeReadyRepoInstalled}" ]; then
+  case ${OS_VER} in
+    8)
+      CRB_REPO="--enable=ORG_AlmaLinux_${OS_VER}_PowerTools --disable ${CodeReadyRepoInstalled}"
+      ;;
+    9|10)
+      CRB_REPO="--enable=ORG_AlmaLinux_${OS_VER}_CRB --disable ${CodeReadyRepoInstalled}"
+      ;;
+  esac
+fi
+
+# We have no satellite-client repository in AlmaLinux. Alma Linux foreman Client can be considered if you want.
+/usr/bin/dnf remove -y $(/usr/bin/dnf list installed | /usr/bin/awk '/satellite-client/{print $1}')
+/usr/bin/dnf upgrade -y >/dev/null || exit 1
+
+# Your Repo naming is different. This is an example only.
+/usr/bin/subscription-manager repos --enable ORG_AlmaLinux_${OS_VER}_BaseOS_RPMs \
+                                    --enable ORG_AlmaLinux_${OS_VER}_AppStream_RPMs \
+                                    --enable ORG_EPEL_EPEL${OS_VER} \
+                                    --enable ORG_Zabbix_7_4-AL${OS_VER} \
+                                    --disable rhel-${OS_VER}-for-x86_64-appstream-rpms \
+                                    --disable rhel-${OS_VER}-for-x86_64-baseos-rpms \
+                                    --disable satellite-client-6-for-rhel-${OS_VER}-x86_64-rpms \
+                                    --disable ORG_Zabbix_7_4-RHEL${OS_VER} ${CRB_REPO}
+```
+
+The Zabbix repository is shown here as an example of a non RedHat repository that has a RedHat and AlmaLinux version.
+
+Download the almalinux-deploy.sh script from your internal systems (pub directory of the foreman server is a suggestion);  
+  and run it with the '--preserve-rhsm' option.
 
 ## Known Limitations
 
