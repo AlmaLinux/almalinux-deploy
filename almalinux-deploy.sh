@@ -507,14 +507,9 @@ assert_dnf_plugins_core() {
 #
 # Prints almalinux-release RPM package download URL.
 get_release_file_url() {
-    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
-        local -r os_version="${1%%.*}"
-        local -r arch="${2}"
-        echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux-release-latest-${os_version}.${arch}.rpm}"
-    else
-        # get the url of this system's almalinux-release package from dnf
-        dnf download --url almalinux-release 2>/dev/null | grep http
-    fi
+    local -r os_version="${1%%.*}"
+    local -r arch="${2}"
+    echo "${ALMA_RELEASE_URL:-${REPO_URL}/almalinux-release-latest-${os_version}.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-repos RPM package download URL.
@@ -524,14 +519,9 @@ get_release_file_url() {
 #
 # Prints almalinux-release RPM package download URL.
 get_repos_file_url() {
-    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
-        local -r os_version="${1%%.*}"
-        local -r arch="${2}"
-        echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-repos-latest-${os_version}.${arch}.rpm}"
-    else
-        # get the url of this system's almalinux-release package from dnf
-        dnf download --url almalinux-repos 2>/dev/null | grep http
-    fi
+    local -r os_version="${1%%.*}"
+    local -r arch="${2}"
+    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-repos-latest-${os_version}.${arch}.rpm}"
 }
 
 # Returns a latest almalinux-gpg-keys RPM package download URL.
@@ -541,14 +531,9 @@ get_repos_file_url() {
 #
 # Prints almalinux-gpg-keys RPM package download URL.
 get_gpg_keys_file_url() {
-    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
-        local -r os_version="${1%%.*}"
-        local -r arch="${2}"
-        echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
-    else
-        # get the url of this system's almalinux-release package from dnf
-        dnf download --url almalinux-gpg-keys 2>/dev/null | grep http
-    fi
+    local -r os_version="${1%%.*}"
+    local -r arch="${2}"
+    echo "${ALMA_REPOS_URL:-${REPO_URL}/almalinux-gpg-keys-latest-${os_version}.${arch}.rpm}"
 }
 
 # Downloads and installs the AlmaLinux public PGP key.
@@ -582,6 +567,32 @@ install_rpm_pubkey() {
     save_status_of_stage "install_rpm_pubkey"
 }
 
+# Downloads a package from the repositories enabled on the system
+# (--preserve-rhsm mode: repositories are managed by subscription-manager,
+# so dnf takes care of mirrors, proxies and client certificates).
+#
+# $1 - Temporary directory path.
+# $2 - Package name (e.g. almalinux-release).
+#
+# Prints downloaded file path.
+download_pkg_from_repos() {
+    local -r tmp_dir="${1}"
+    local -r pkg_name="${2}"
+    local output
+    local pkg_path
+    if ! output=$(dnf download --downloaddir="${tmp_dir}" "${pkg_name}" 2>&1); then
+        report_step_error "Download ${pkg_name} package from enabled repositories" "${output}"
+        exit 1
+    fi
+    pkg_path=$(find "${tmp_dir}" -maxdepth 1 -name "${pkg_name}-[0-9]*.rpm" | head -n 1)
+    if [[ -z "${pkg_path}" ]]; then
+        report_step_error "Download ${pkg_name} package from enabled repositories" \
+            "${pkg_name} RPM was not found in ${tmp_dir} after dnf download"
+        exit 1
+    fi
+    echo "${pkg_path}"
+}
+
 # Downloads almalinux-release package.
 #
 # $1 - Temporary directory path.
@@ -591,12 +602,12 @@ install_rpm_pubkey() {
 download_release_files() {
     local -r tmp_dir="${1}"
     local -r release_url="${2}"
-    local release_path
-    if [[ "${PRESERVE_RHSM}" == "NO" ]]; then
-        release_path="${tmp_dir}/almalinux-release-latest.rpm"
-    else
-        release_path="${tmp_dir}/almalinux-release.rpm"
+    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
+        # release_url is ignored: the package comes from the enabled repositories
+        download_pkg_from_repos "${tmp_dir}" "almalinux-release"
+        return 0
     fi
+    local -r release_path="${tmp_dir}/almalinux-release-latest.rpm"
     local output
     if ! output=$(curl -f -s -S -o "${release_path}" "${release_url}" 2>&1); then
         report_step_error 'Download almalinux packages - release' "${output}"
@@ -614,6 +625,11 @@ download_release_files() {
 download_repos_files() {
     local -r tmp_dir="${1}"
     local -r repos_url="${2}"
+    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
+        # repos_url is ignored: the package comes from the enabled repositories
+        download_pkg_from_repos "${tmp_dir}" "almalinux-repos"
+        return 0
+    fi
     local -r repos_path="${tmp_dir}/almalinux-repos.rpm"
     local output
     if ! output=$(curl -f -s -S -o "${repos_path}" "${repos_url}" 2>&1); then
@@ -632,6 +648,11 @@ download_repos_files() {
 download_gpg_keys_files() {
     local -r tmp_dir="${1}"
     local -r gpg_keys_url="${2}"
+    if [[ "${PRESERVE_RHSM}" == "YES" ]]; then
+        # gpg_keys_url is ignored: the package comes from the enabled repositories
+        download_pkg_from_repos "${tmp_dir}" "almalinux-gpg-keys"
+        return 0
+    fi
     local -r gpg_keys_path="${tmp_dir}/almalinux-gpg-keys.rpm"
     local output
     if ! output=$(curl -f -s -S -o "${gpg_keys_path}" "${gpg_keys_url}" 2>&1); then
