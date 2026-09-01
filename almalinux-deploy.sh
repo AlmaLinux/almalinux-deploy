@@ -42,12 +42,18 @@ BRANDING_PKGS=("centos-backgrounds" "centos-logos" "centos-indexhtml" \
 REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "centos-stream-release" "centos-stream-repos" \
                 "kernel-uek" "kernel-uek-core" "kernel-uek-modules" \
+                "kernel-uek-modules-core" "kernel-uek-modules-desktop" \
+                "kernel-uek-modules-extra-netfilter" "kernel-uek-modules-usb" \
+                "kernel-uek-modules-wireless" \
                 "libreport-plugin-rhtsupport" "libreport-rhel" "insights-client" \
+                "insights-core" "insights-core-selinux" "rhsm-icons" \
                 "libreport-rhel-anaconda-bugzilla" "libreport-rhel-bugzilla" \
                 "linux-firmware-core" "iwlax2xx-firmware" \
                 "miraclelinux-release" "miraclelinux-repos" "asianux-release" \
                 "axtsn-client-tools" "axtsn-setup" "dnf-axtu-plugin" \
                 "NetworkManager-config-connectivity-miraclelinux" \
+                "dnf-plugin-spacewalk" "python3-dnf-plugin-spacewalk" \
+                "python3-dnf-plugin-ulninfo" \
                 "oraclelinux-release" "oraclelinux-release-el8" \
                 "oraclelinux-release-el9" "oraclelinux-release-el10" "python3-gobject-base-noarch" \
                 "redhat-release" "redhat-release-eula" \
@@ -56,7 +62,8 @@ REMOVE_PKGS=("centos-linux-release" "centos-gpg-keys" "centos-linux-repos" \
                 "vzlinux-release" "vzlinux-gpg-keys" "vzlinux-repos" "vzlinux-obsolete-packages" \
                 "evolution-data-server-ui" "epel-next-release" "openssl-fips-provider" "openssl-fips-provider-so" \
                 "fips-provider-next")
-REMOVE_PKGS_EL9=("udisks2-btrfs")
+REMOVE_PKGS_EL8=("btrfs-progs")
+REMOVE_PKGS_EL9=("udisks2-btrfs" "btrfs-progs")
 REDHAT_DNF_PLUGINS=("product-id" "subscription-manager" "upload-profile")
 REDHAT_REPO_FILES=("/etc/yum.repos.d/redhat.repo" "/etc/yum.repos.d/ubi.repo")
 REDHAT_RHSM_RPMS=("subscription-manager" "subscription-manager-cockpit" "cockpit" "rhc")
@@ -780,7 +787,10 @@ remove_os_specific_packages_before_migration() {
     fi
     local -r os_version="${1}"
 
-    # Extend REMOVE_PKGS with EL9-specific packages if migrating EL9
+    # Extend REMOVE_PKGS with version-specific packages
+    if [[ "${os_version}" == 8* ]]; then
+        REMOVE_PKGS+=("${REMOVE_PKGS_EL8[@]}")
+    fi
     if [[ "${os_version}" == 9* ]]; then
         REMOVE_PKGS+=("${REMOVE_PKGS_EL9[@]}")
     fi
