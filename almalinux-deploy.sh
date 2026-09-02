@@ -1494,8 +1494,11 @@ reinstall_secure_boot_packages() {
                 # A kernel signed by another vendor won't boot with Secure Boot enabled,
                 # so make sure the latest AlmaLinux kernel is installed and is the default.
                 dnf install -y kernel
+                # Query kernel-core, not the kernel meta package: it is kernel-core
+                # that owns /boot/vmlinuz-* and carries the signed kernel image, and
+                # the two can come from different vendors for the same version
                 local alma_kernel
-                alma_kernel="$(rpm -q kernel --queryformat '%{VENDOR}|%{VERSION}-%{RELEASE}.%{ARCH}\n' \
+                alma_kernel="$(rpm -q kernel-core --queryformat '%{VENDOR}|%{VERSION}-%{RELEASE}.%{ARCH}\n' \
                     | awk -F'|' '$1 == "AlmaLinux" {print $2}' | sort -V | tail -n 1)"
                 if [[ -z "${alma_kernel}" ]]; then
                     report_step_error 'Install AlmaLinux kernel' \
