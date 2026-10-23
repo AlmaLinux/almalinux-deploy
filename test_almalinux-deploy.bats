@@ -1,6 +1,31 @@
 #!/usr/bin/env bats
 source almalinux-deploy.sh -t
 
+@test 'assert_compatible_os_version rejects EL8 below the minimum minor version' {
+    get_status_of_stage() { return 1; }
+    rpm() { echo '8.10'; }
+    get_os_release_var() { echo 'CentOS Linux'; }
+    report_step_error() { echo "$*"; }
+    report_step_done() { :; }
+    save_status_of_stage() { :; }
+    run assert_compatible_os_version '8.3' 'mock-release.rpm'
+    [[ ${status} -eq 1 ]]
+    [[ ${output} == *'at least 8.4'* ]]
+}
+
+@test 'assert_compatible_os_version accepts supported minor and newer major versions' {
+    get_status_of_stage() { return 1; }
+    rpm() { echo '8.10'; }
+    get_os_release_var() { echo 'CentOS Linux'; }
+    report_step_error() { echo "$*"; }
+    report_step_done() { :; }
+    save_status_of_stage() { :; }
+    for version in '8.4' '8.10' '9.1' '10.0'; do
+        run assert_compatible_os_version "${version}" 'mock-release.rpm'
+        [[ ${status} -eq 0 ]]
+    done
+}
+
 
 setup() {
     if [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_release_var' ]] \
