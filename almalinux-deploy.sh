@@ -765,9 +765,9 @@ assert_compatible_os_version() {
         if [[ "${os_version%%.*}" -lt "${MINIMAL_SUPPORTED_VERSION%%.*}" ]] \
            || { [[ "${os_version%%.*}" -eq "${MINIMAL_SUPPORTED_VERSION%%.*}" ]] \
                 && [[ "${os_version#*.}" -lt "${MINIMAL_SUPPORTED_VERSION#*.}" ]]; }; then
-          report_step_error "Please upgrade your OS from ${os_version} to" \
-          "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
-          exit 1
+            report_step_error "Please upgrade your OS from ${os_version} to" \
+                "at least ${MINIMAL_SUPPORTED_VERSION} and try again"
+            exit 1
         fi
     fi
     if [[ "${os_version%%.*}" -lt "${alma_version%%.*}" ]] && [[ "${os_version#*.}" -gt "${alma_version#*.}" ]]; then
