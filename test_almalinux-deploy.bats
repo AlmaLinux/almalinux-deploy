@@ -1,32 +1,6 @@
 #!/usr/bin/env bats
 source almalinux-deploy.sh -t
 
-@test 'assert_compatible_os_version rejects EL8 below the minimum minor version' {
-    get_status_of_stage() { return 1; }
-    rpm() { echo '8.10'; }
-    get_os_release_var() { echo 'CentOS Linux'; }
-    report_step_error() { echo "$*"; }
-    report_step_done() { :; }
-    save_status_of_stage() { :; }
-    run assert_compatible_os_version '8.3' 'mock-release.rpm'
-    [[ ${status} -eq 1 ]]
-    [[ ${output} == *'at least 8.4'* ]]
-}
-
-@test 'assert_compatible_os_version accepts supported minor and newer major versions' {
-    get_status_of_stage() { return 1; }
-    rpm() { echo '8.10'; }
-    get_os_release_var() { echo 'CentOS Linux'; }
-    report_step_error() { echo "$*"; }
-    report_step_done() { :; }
-    save_status_of_stage() { :; }
-    for version in '8.4' '8.10' '9.1' '10.0'; do
-        run assert_compatible_os_version "${version}" 'mock-release.rpm'
-        [[ ${status} -eq 0 ]]
-    done
-}
-
-
 setup() {
     if [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_release_var' ]] \
        || [[ ${BATS_TEST_DESCRIPTION} =~ 'get_os_version' ]]; then
@@ -198,4 +172,60 @@ teardown() {
     run get_os_version 'weirdos'
     [[ ${status} -eq 0 ]]
     [[ ${output} == '8' ]]
+}
+
+# Mocks for assert_compatible_os_version: no stage markers, almalinux-release 8.10
+#
+# $1 - NAME from /etc/os-release (default: CentOS Linux).
+mock_compatible_os_version() {
+    MOCKED_OS_NAME="${1:-CentOS Linux}"
+    function get_status_of_stage() { return 1; }
+    function save_status_of_stage() { :; }
+    function rpm() { echo '8.10'; }
+    function get_os_release_var() { echo "${MOCKED_OS_NAME}"; }
+    export MOCKED_OS_NAME
+    export -f get_status_of_stage save_status_of_stage rpm get_os_release_var
+}
+
+@test 'assert_compatible_os_version fails on EL 8.3' {
+    mock_compatible_os_version
+    run assert_compatible_os_version '8.3' 'mock-release.rpm'
+    [[ ${status} -eq 1 ]]
+    [[ ${output} == *'at least 8.4'* ]]
+}
+
+@test 'assert_compatible_os_version passes on EL 8.4' {
+    mock_compatible_os_version
+    run assert_compatible_os_version '8.4' 'mock-release.rpm'
+    [[ ${status} -eq 0 ]]
+}
+
+@test 'assert_compatible_os_version passes on EL 8.10' {
+    mock_compatible_os_version
+    run assert_compatible_os_version '8.10' 'mock-release.rpm'
+    [[ ${status} -eq 0 ]]
+}
+
+@test 'assert_compatible_os_version passes on EL 9.0' {
+    mock_compatible_os_version
+    run assert_compatible_os_version '9.0' 'mock-release.rpm'
+    [[ ${status} -eq 0 ]]
+}
+
+@test 'assert_compatible_os_version passes on EL 9.1' {
+    mock_compatible_os_version
+    run assert_compatible_os_version '9.1' 'mock-release.rpm'
+    [[ ${status} -eq 0 ]]
+}
+
+@test 'assert_compatible_os_version passes on EL 10.0' {
+    mock_compatible_os_version
+    run assert_compatible_os_version '10.0' 'mock-release.rpm'
+    [[ ${status} -eq 0 ]]
+}
+
+@test 'assert_compatible_os_version passes on CentOS Stream 8' {
+    mock_compatible_os_version 'CentOS Stream'
+    run assert_compatible_os_version '8' 'mock-release.rpm'
+    [[ ${status} -eq 0 ]]
 }
